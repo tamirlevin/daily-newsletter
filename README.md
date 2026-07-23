@@ -19,3 +19,6 @@ configured public sources remain eligible.
 
 Implementation and local operating instructions live in
 [`work/README.md`](work/README.md).
+
+Future Codex sessions should start with [`AGENTS.md`](AGENTS.md), which records
+the architecture, durable decisions, change recipes, and release checks.
