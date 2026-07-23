@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "timeZone": "Australia/Melbourne",
+  "lookbackDays": 7,
+  "maxItems": 10,
+  "enrichmentPoolMultiplier": 3,
+  "requestConcurrency": 4,
+  "editorialMix": {
+    "executive": 0.7,
+    "technical": 0.2,
+    "research": 0.1
+  },
+  "sourceSignals": {
+    "discoveryWeight": {
+      "diverse-newsletter": 1,
+      "community-signal": 0.85,
+      "official-lab": 0.6,
+      "research-index": 0.55
+    },
+    "evidenceAuthority": {
+      "diverse-newsletter": 0.45,
+      "community-signal": 0.25,
+      "official-lab": 1,
+      "research-index": 0.85
+    }
+  },
+  "selectionRules": {
+    "maxUncorroboratedOfficialItemsPerVendor": 1,
+    "maxSoleDiscoveryItemsBySource": {
+      "hacker-news": 3
+    },
+    "maxSoleDiscoveryItemsBySourcePerLane": {
+      "hacker-news": 1
+    }
+  },
+  "sources": [
+    {
+      "id": "tldr-ai",
+      "name": "TLDR AI",
+      "type": "tldr",
+      "role": "diverse-newsletter",
+      "kind": "discovery",
+      "enabled": true,
+      "feedUrl": "https://tldr.tech/api/rss/ai",
+      "maxIssues": 5
+    },
+    {
+      "id": "alphasignal",
+      "name": "AlphaSignal",
+      "type": "alphasignal",
+      "role": "diverse-newsletter",
+      "kind": "discovery",
+      "enabled": true,
+      "sitemapUrl": "https://alphasignal.ai/sitemaps/news.xml",
+      "maxEntries": 120
+    },
+    {
+      "id": "hacker-news",
+      "name": "Hacker News",
+      "type": "hackernews",
+      "role": "community-signal",
+      "kind": "discovery",
+      "enabled": true,
+      "apiUrl": "https://hn.algolia.com/api/v1/search_by_date",
+      "minPoints": 20,
+      "hitsPerPage": 500,
+      "maxPages": 2
+    },
+    {
+      "id": "openai-news",
+      "name": "OpenAI News",
+      "type": "official-rss",
+      "role": "official-lab",
+      "kind": "primary",
+      "vendor": "openai",
+      "enabled": true,
+      "feedUrl": "https://openai.com/news/rss.xml",
+      "defaultSection": "OpenAI News",
+      "maxItems": 100
+    },
+    {
+      "id": "anthropic-news",
+      "name": "Anthropic News",
+      "type": "anthropic",
+      "role": "official-lab",
+      "kind": "primary",
+      "vendor": "anthropic",
+      "enabled": true,
+      "url": "https://www.anthropic.com/news",
+      "maxItems": 50
+    },
+    {
+      "id": "google-ai-news",
+      "name": "Google AI / DeepMind",
+      "type": "official-rss",
+      "role": "official-lab",
+      "kind": "primary",
+      "vendor": "google",
+      "enabled": true,
+      "feedUrl": "https://blog.google/rss/",
+      "defaultSection": "Google AI",
+      "includeCategoryPatterns": [
+        "^AI$",
+        "^Gemini$",
+        "^Gemini App$",
+        "^Gemini models$",
+        "^Google DeepMind$"
+      ],
+      "includeUrlPatterns": [
+        "/innovation-and-ai/models-and-research/",
+        "/products-and-platforms/products/gemini/"
+      ],
+      "excludeTitlePatterns": [
+        "\\b(?:tips?|ways) (?:for|to)\\b",
+        "\\bPixel Drop\\b",
+        "\\bGalaxy Unpacked\\b"
+      ],
+      "maxItems": 100
+    },
+    {
+      "id": "huggingface-papers",
+      "name": "Hugging Face Daily Papers",
+      "type": "huggingface-papers",
+      "role": "research-index",
+      "kind": "discovery",
+      "enabled": true,
+      "apiUrl": "https://huggingface.co/api/daily_papers",
+      "sort": "trending",
+      "limitPerWeek": 50,
+      "maxCandidates": 50,
+      "maxPaperAgeDays": 45
+    }
+  ]
+}

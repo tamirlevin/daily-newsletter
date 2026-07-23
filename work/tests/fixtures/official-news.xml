@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Official AI News</title>
+    <item>
+      <title>Frontier model adds governed enterprise agent controls</title>
+      <description>New controls cover budgets, audit trails, and deployment approvals.</description>
+      <link>https://openai.com/example/governed-agents</link>
+      <category>Product</category>
+      <pubDate>Wed, 22 Jul 2026 13:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Gemini model introduces a lower-latency inference tier</title>
+      <description>A model release for developers and enterprise workloads.</description>
+      <link>https://blog.google/innovation-and-ai/models-and-research/gemini-models/lower-latency-tier/</link>
+      <category>Gemini models</category>
+      <pubDate>Tue, 21 Jul 2026 15:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Five ways to use Gemini during a summer holiday</title>
+      <description>Consumer usage tips.</description>
+      <link>https://blog.google/products-and-platforms/products/gemini/summer-tips/</link>
+      <category>Gemini</category>
+      <pubDate>Mon, 20 Jul 2026 19:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Old model announcement</title>
+      <description>Outside the collection window.</description>
+      <link>https://openai.com/example/old-model</link>
+      <category>Product</category>
+      <pubDate>Mon, 01 Jun 2026 12:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

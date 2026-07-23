@@ -1,0 +1,39 @@
+{
+  "name": "ai-weekly-brief",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run validate:issue && vite build && vite build --ssr app/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "collect": "node scripts/collect.mjs",
+    "summarize:draft": "node scripts/summarize-draft.mjs",
+    "validate:issue": "node scripts/validate-issue.mjs",
+    "test": "npm run test:collectors && npm run build && npm run test:render",
+    "test:collectors": "node --test tests/collectors/*.test.mjs tests/issue-validation.test.mjs",
+    "test:render": "node --test tests/rendered-html.test.mjs",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "fast-xml-parser": "5.10.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "typescript": "5.9.3",
+    "vite": "8.1.5"
+  },
+  "overrides": {
+    "cheerio@1.2.0": {
+      "undici": "7.28.0"
+    }
+  },
+  "type": "module"
+}
