@@ -3,6 +3,9 @@
 A public, automatically refreshed AI briefing for executive, technical, and
 research readers.
 
+Live site:
+[ai-weekly-brief.tamirlevin300024.chatgpt.site](https://ai-weekly-brief.tamirlevin300024.chatgpt.site/)
+
 The system has two moving parts:
 
 - GitHub Actions collects, deduplicates, ranks, and checks ten stories every
