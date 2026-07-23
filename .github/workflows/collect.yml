@@ -1,0 +1,61 @@
+name: Collect weekly candidates
+
+on:
+  schedule:
+    # Friday 08:00 AEST / 09:00 AEDT.
+    - cron: "0 22 * * 4"
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: Days of source coverage
+        required: true
+        default: "7"
+      max_items:
+        description: Candidate stories to retain
+        required: true
+        default: "10"
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: work
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: work/package-lock.json
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Test source and editorial rules
+        run: npm run test:collectors
+
+      - name: Collect and rank candidates
+        env:
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
+          MAX_ITEMS: ${{ inputs.max_items || '10' }}
+        run: npm run collect -- --lookback-days "$LOOKBACK_DAYS" --max-items "$MAX_ITEMS"
+
+      - name: Add readable review summary
+        run: npm run summarize:draft >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain draft and source health
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-weekly-candidates-${{ github.run_id }}
+          path: |
+            work/data/drafts/*.json
+            work/data/source-health/*.json
+          if-no-files-found: error
+          retention-days: 35

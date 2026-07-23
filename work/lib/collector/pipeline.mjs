@@ -1,0 +1,320 @@
+import {
+  collectAlphaSignal,
+  enrichAlphaCandidate,
+} from "./alphasignal.mjs";
+import {
+  collectAnthropic,
+  enrichAnthropicCandidate,
+} from "./anthropic.mjs";
+import {
+  countEditorialMix,
+  dedupeCandidates,
+  scoreCandidate,
+  selectEditorialMix,
+} from "./editorial.mjs";
+import { fetchText as defaultFetchText, resolveTrackingUrl } from "./network.mjs";
+import { collectHackerNews } from "./hackernews.mjs";
+import { collectHuggingFace } from "./huggingface.mjs";
+import { collectOfficialRss } from "./official-rss.mjs";
+import {
+  canonicalizeUrl,
+  localDateKey,
+  mapWithConcurrency,
+  publicCandidate,
+} from "./shared.mjs";
+import { collectTldr } from "./tldr.mjs";
+
+function failedHealth(source, error) {
+  return {
+    id: source.id,
+    name: source.name,
+    role: source.role,
+    kind: source.kind,
+    status: "failed",
+    requests: 1,
+    fetchedItems: 0,
+    acceptedCandidates: 0,
+    discardedItems: 0,
+    errors: [{
+      url:
+        source.feedUrl ??
+        source.sitemapUrl ??
+        source.apiUrl ??
+        source.url,
+      message: error.message,
+    }],
+  };
+}
+
+function sourceCollector(source) {
+  if (source.type === "tldr") return collectTldr;
+  if (source.type === "alphasignal") return collectAlphaSignal;
+  if (source.type === "official-rss") return collectOfficialRss;
+  if (source.type === "anthropic") return collectAnthropic;
+  if (source.type === "hackernews") return collectHackerNews;
+  if (source.type === "huggingface-papers") return collectHuggingFace;
+  throw new Error(`Unsupported source type: ${source.type}`);
+}
+
+function updateEnrichmentHealth(health, sourceId, error) {
+  const source = health.find((entry) => entry.id === sourceId);
+  if (!source) return;
+  source.status = source.status === "failed" ? "failed" : "degraded";
+  source.errors.push({
+    stage: "enrichment",
+    message: error.message,
+  });
+}
+
+async function enrichCandidate(
+  candidate,
+  {
+    fetchText,
+    health,
+  },
+) {
+  let enriched = candidate;
+  const attributionIds = new Set(
+    candidate.sourceAttributions.map(({ sourceId }) => sourceId),
+  );
+
+  if (attributionIds.has("alphasignal")) {
+    const alphaHealth = health.find((entry) => entry.id === "alphasignal");
+    try {
+      enriched = await enrichAlphaCandidate(enriched, fetchText);
+      if (alphaHealth) alphaHealth.requests += 1;
+    } catch (error) {
+      if (alphaHealth) alphaHealth.requests += 1;
+      updateEnrichmentHealth(health, "alphasignal", error);
+    }
+  }
+
+  if (attributionIds.has("anthropic-news")) {
+    const anthropicHealth = health.find(
+      (entry) => entry.id === "anthropic-news",
+    );
+    try {
+      enriched = await enrichAnthropicCandidate(enriched, fetchText);
+      if (anthropicHealth) anthropicHealth.requests += 1;
+    } catch (error) {
+      if (anthropicHealth) anthropicHealth.requests += 1;
+      updateEnrichmentHealth(health, "anthropic-news", error);
+    }
+  }
+
+  const trackingHosts = new Set([
+    "a.tldrnewsletter.com",
+    "links.tldrnewsletter.com",
+  ]);
+  let host = "";
+  try {
+    host = new URL(enriched.url).hostname.toLocaleLowerCase();
+  } catch {
+    return enriched;
+  }
+
+  if (trackingHosts.has(host)) {
+    const tldrHealth = health.find((entry) => entry.id === "tldr-ai");
+    try {
+      const resolved = await resolveTrackingUrl(enriched.url);
+      if (tldrHealth) tldrHealth.requests += 1;
+      if (resolved) {
+        enriched = {
+          ...enriched,
+          url: resolved,
+          canonicalUrl: canonicalizeUrl(resolved),
+          originalDomain: new URL(resolved).hostname.toLocaleLowerCase(),
+        };
+      }
+    } catch (error) {
+      if (tldrHealth) tldrHealth.requests += 1;
+      updateEnrichmentHealth(health, "tldr-ai", error);
+    }
+  }
+
+  return enriched;
+}
+
+function validatePolicy(config) {
+  const ratioTotal = Object.values(config.editorialMix).reduce(
+    (total, value) => total + value,
+    0,
+  );
+  if (Math.abs(ratioTotal - 1) > 0.0001) {
+    throw new Error("Editorial mix must add up to 1");
+  }
+  if (!Number.isInteger(config.maxItems) || config.maxItems < 1) {
+    throw new Error("maxItems must be a positive integer");
+  }
+  if (
+    !config.sourceSignals?.discoveryWeight ||
+    !config.sourceSignals?.evidenceAuthority
+  ) {
+    throw new Error(
+      "sourceSignals must define discoveryWeight and evidenceAuthority",
+    );
+  }
+}
+
+function isDirectXLink(candidate) {
+  try {
+    const host = new URL(candidate.url).hostname.toLocaleLowerCase();
+    return host === "x.com" || host === "twitter.com";
+  } catch {
+    return false;
+  }
+}
+
+export async function collectBrief({
+  config,
+  asOf = new Date(),
+  lookbackDays = config.lookbackDays,
+  maxItems = config.maxItems,
+  fetchText = defaultFetchText,
+}) {
+  validatePolicy({ ...config, maxItems });
+  const normalizedAsOf = new Date(asOf);
+  if (Number.isNaN(normalizedAsOf.valueOf())) {
+    throw new Error(`Invalid as-of date: ${asOf}`);
+  }
+
+  const enabledSources = config.sources.filter((source) => source.enabled);
+  const sourceResults = await Promise.all(
+    enabledSources.map(async (source) => {
+      try {
+        return await sourceCollector(source)({
+          source,
+          asOf: normalizedAsOf,
+          lookbackDays,
+          concurrency: config.requestConcurrency,
+          fetchText,
+        });
+      } catch (error) {
+        return {
+          candidates: [],
+          health: failedHealth(source, error),
+        };
+      }
+    }),
+  );
+
+  const health = sourceResults.map(({ health: sourceHealth }) => sourceHealth);
+  const rawCandidates = sourceResults.flatMap(({ candidates }) => candidates);
+  if (rawCandidates.length === 0) {
+    throw new Error("All configured sources failed or returned no candidates");
+  }
+
+  const preliminary = dedupeCandidates(rawCandidates, { fuzzy: false }).map(
+    (candidate) => scoreCandidate(candidate, config, normalizedAsOf),
+  );
+  const enrichmentPoolSize = Math.min(
+    preliminary.length,
+    Math.max(
+      maxItems,
+      maxItems * (config.enrichmentPoolMultiplier ?? 3),
+    ),
+  );
+  const enrichmentPool = selectEditorialMix(
+    preliminary,
+    enrichmentPoolSize,
+    config.editorialMix,
+    config.selectionRules,
+  );
+  const enriched = await mapWithConcurrency(
+    enrichmentPool,
+    config.requestConcurrency,
+    (candidate) => enrichCandidate(candidate, { fetchText, health }),
+  );
+  const rescored = dedupeCandidates(enriched, { fuzzy: true }).map((candidate) =>
+    scoreCandidate(candidate, config, normalizedAsOf),
+  );
+  const selected = selectEditorialMix(
+    rescored,
+    Math.min(maxItems, rescored.length),
+    config.editorialMix,
+    config.selectionRules,
+  );
+  for (const sourceHealth of health) {
+    sourceHealth.selectedCandidates = selected.filter((candidate) =>
+      candidate.sourceAttributions.some(
+        ({ sourceId }) => sourceId === sourceHealth.id,
+      ),
+    ).length;
+  }
+
+  const status = health.every((source) => source.status === "healthy")
+    ? "healthy"
+    : health.some((source) => source.status !== "failed")
+      ? "degraded"
+      : "failed";
+  const generatedAt = normalizedAsOf.toISOString();
+  const periodStart = new Date(normalizedAsOf);
+  periodStart.setUTCDate(periodStart.getUTCDate() - lookbackDays);
+  const issueDate = localDateKey(normalizedAsOf, config.timeZone);
+
+  const healthReport = {
+    schemaVersion: 1,
+    kind: "source-health",
+    runId: generatedAt,
+    status,
+    generatedAt,
+    period: {
+      start: periodStart.toISOString(),
+      end: generatedAt,
+      lookbackDays,
+    },
+    sources: health,
+    totals: {
+      rawCandidates: rawCandidates.length,
+      preliminaryCandidates: preliminary.length,
+      enrichmentPoolCandidates: enrichmentPool.length,
+      postEnrichmentCandidates: rescored.length,
+      selectedCandidates: selected.length,
+      selectedWithPrimaryEvidence: selected.filter(
+        (candidate) =>
+          (candidate.sourceSignals?.evidenceAuthority ?? 0) >= 0.9,
+      ).length,
+      selectedAcrossMultipleDiscoveryChannels: selected.filter(
+        (candidate) =>
+          (candidate.sourceSignals?.discoverySourceCount ?? 0) > 1,
+      ).length,
+      selectedNeedingPrimaryEvidenceReview: selected.filter(
+        (candidate) => candidate.flags?.needsPrimaryEvidenceReview,
+      ).length,
+      directXLinksInRawCandidates: rawCandidates.filter(isDirectXLink).length,
+      directXLinksInSelection: selected.filter(isDirectXLink).length,
+    },
+  };
+
+  const draft = {
+    schemaVersion: 1,
+    kind: "collection-draft",
+    issueDate,
+    generatedAt,
+    status: "needs-editorial-review",
+    period: healthReport.period,
+    editorialPolicy: {
+      targetMix: config.editorialMix,
+      selectedMix: countEditorialMix(selected),
+      sourceSignals: config.sourceSignals,
+      selectionRules: config.selectionRules,
+      note:
+        "Newsletters, Hacker News, and Hugging Face are discovery signals. Official lab sources are primary evidence, not independent corroboration. Published copy must be written independently.",
+      directXCoverage: {
+        capturedFromConfiguredSources:
+          healthReport.totals.directXLinksInRawCandidates,
+        selected: healthReport.totals.directXLinksInSelection,
+        directIngestionStatus: "not-configured",
+      },
+    },
+    sourceHealth: {
+      status,
+      healthySources: health.filter((source) => source.status === "healthy")
+        .length,
+      configuredSources: health.length,
+    },
+    items: selected.map(publicCandidate),
+  };
+
+  return { draft, healthReport };
+}

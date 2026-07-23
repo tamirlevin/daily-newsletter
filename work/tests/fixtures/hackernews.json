@@ -1,0 +1,36 @@
+{
+  "page": 0,
+  "nbPages": 1,
+  "hits": [
+    {
+      "objectID": "101",
+      "title": "Claude Code gains a durable agent runtime",
+      "url": "https://example.com/claude-agent-runtime",
+      "created_at": "2026-07-22T05:00:00.000Z",
+      "created_at_i": 1784696400,
+      "points": 220,
+      "num_comments": 84,
+      "story_text": null
+    },
+    {
+      "objectID": "102",
+      "title": "Airport simulator adds a new runway",
+      "url": "https://example.com/airport-simulator",
+      "created_at": "2026-07-22T04:00:00.000Z",
+      "created_at_i": 1784692800,
+      "points": 240,
+      "num_comments": 40,
+      "story_text": null
+    },
+    {
+      "objectID": "103",
+      "title": "OpenAI releases an old model",
+      "url": "https://openai.com/example/old-model",
+      "created_at": "2026-06-01T04:00:00.000Z",
+      "created_at_i": 1780286400,
+      "points": 400,
+      "num_comments": 120,
+      "story_text": null
+    }
+  ]
+}

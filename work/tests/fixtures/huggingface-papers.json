@@ -1,0 +1,49 @@
+[
+  {
+    "paper": {
+      "id": "2607.12345",
+      "title": "A benchmark for reliable long-horizon agents",
+      "summary": "A new evaluation measures recovery, oversight, and tool-use reliability.",
+      "publishedAt": "2026-07-18T00:00:00.000Z",
+      "submittedOnDailyAt": "2026-07-21T00:00:00.000Z",
+      "upvotes": 42,
+      "organization": {
+        "name": "ExampleLab",
+        "fullname": "Example Research Lab"
+      },
+      "projectPage": "https://example.org/reliable-agents"
+    },
+    "title": "A benchmark for reliable long-horizon agents",
+    "summary": "A new evaluation measures recovery, oversight, and tool-use reliability.",
+    "publishedAt": "2026-07-17T20:00:00.000Z",
+    "numComments": 7
+  },
+  {
+    "paper": {
+      "id": "2401.00001",
+      "title": "A resurfaced but old language-model paper",
+      "summary": "This paper is too old for the weekly research slot.",
+      "publishedAt": "2024-01-01T00:00:00.000Z",
+      "submittedOnDailyAt": "2026-07-21T00:00:00.000Z",
+      "upvotes": 100
+    },
+    "title": "A resurfaced but old language-model paper",
+    "summary": "This paper is too old for the weekly research slot.",
+    "publishedAt": "2026-07-17T20:00:00.000Z",
+    "numComments": 10
+  },
+  {
+    "paper": {
+      "id": "2606.99999",
+      "title": "A paper submitted outside the collection window",
+      "summary": "This entry is not part of the current weekly submission set.",
+      "publishedAt": "2026-06-15T00:00:00.000Z",
+      "submittedOnDailyAt": "2026-06-16T00:00:00.000Z",
+      "upvotes": 70
+    },
+    "title": "A paper submitted outside the collection window",
+    "summary": "This entry is not part of the current weekly submission set.",
+    "publishedAt": "2026-06-15T00:00:00.000Z",
+    "numComments": 2
+  }
+]

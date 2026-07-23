@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>TLDR AI RSS Feed</title>
+    <item>
+      <title><![CDATA[Enterprise agents, an open SDK, and a new benchmark]]></title>
+      <link>https://tldr.tech/ai/2026-07-22</link>
+      <pubDate>Wed, 22 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Older issue</title>
+      <link>https://tldr.tech/ai/2026-07-14</link>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Broken issue</title>
+      <link>not a URL</link>
+      <pubDate>not a date</pubDate>
+    </item>
+  </channel>
+</rss>
