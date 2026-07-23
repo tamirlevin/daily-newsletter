@@ -1,21 +1,21 @@
 # AI Weekly Brief
 
-A concise, editorially reviewed AI briefing for executive, technical, and
+A public, automatically refreshed AI briefing for executive, technical, and
 research readers.
 
-The public reader is hosted on GitHub Pages:
+Live site:
+[ai-weekly-brief.tamirlevin300024.chatgpt.site](https://ai-weekly-brief.tamirlevin300024.chatgpt.site/)
 
-<https://tamirlevin.github.io/daily-newsletter/>
+The system has two moving parts:
 
-The implementation, source policy, and local operating instructions live in
+- GitHub Actions collects, deduplicates, ranks, and checks ten stories every
+  Friday or on demand.
+- Sites publishes the latest valid run and retains the current run plus the two
+  immediately before it.
+
+The reader includes **Latest**, **History**, and **How it works** views. Direct X
+collection is intentionally excluded; specific X links discovered through the
+configured public sources remain eligible.
+
+Implementation and local operating instructions live in
 [`work/README.md`](work/README.md).
-
-## Automation
-
-- **Publish public briefing** validates and deploys the approved
-  `work/data/issue.json` whenever `main` changes.
-- **Collect weekly candidates** runs every Friday morning in Melbourne and can
-  also be started manually. It creates a review artifact but never publishes
-  or overwrites the approved issue.
-
-No API keys are required for the current public-source collectors.

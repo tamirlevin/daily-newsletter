@@ -1,9 +1,9 @@
 import { renderToString } from "react-dom/server";
-import issueData from "@/data/issue.json";
-import { BriefingApp, type BriefIssue } from "./briefing-app";
+import seedData from "@/data/seed-run.json";
+import { BriefingApp, type PublicationRun } from "./briefing-app";
 
 export function render() {
   return renderToString(
-    <BriefingApp issue={issueData as BriefIssue} />,
+    <BriefingApp seedRun={seedData as PublicationRun} />,
   );
 }

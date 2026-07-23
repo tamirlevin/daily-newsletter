@@ -8,7 +8,7 @@ const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const htmlPath = path.resolve(projectRoot, "dist/index.html");
+const htmlPath = path.resolve(projectRoot, "dist/client/index.html");
 const serverEntry = path.resolve(projectRoot, "dist-ssr/entry-server.js");
 
 async function main() {

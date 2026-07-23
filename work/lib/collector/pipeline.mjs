@@ -291,7 +291,7 @@ export async function collectBrief({
     kind: "collection-draft",
     issueDate,
     generatedAt,
-    status: "needs-editorial-review",
+    status: "ready-to-publish",
     period: healthReport.period,
     editorialPolicy: {
       targetMix: config.editorialMix,
