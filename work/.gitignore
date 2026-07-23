@@ -31,6 +31,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+.dev.vars*
+!.dev.vars.example
 
 # Generated collector runs are retained as GitHub Actions artifacts, not source.
 /data/drafts/*.json

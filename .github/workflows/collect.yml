@@ -10,10 +10,6 @@ on:
         description: Days of source coverage
         required: true
         default: "7"
-      max_items:
-        description: Candidate stories to retain
-        required: true
-        default: "10"
 
 permissions:
   contents: read
@@ -44,18 +40,24 @@ jobs:
       - name: Collect and rank candidates
         env:
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
-          MAX_ITEMS: ${{ inputs.max_items || '10' }}
+          MAX_ITEMS: "10"
         run: npm run collect -- --lookback-days "$LOOKBACK_DAYS" --max-items "$MAX_ITEMS"
 
-      - name: Add readable review summary
+      - name: Add readable run summary
         run: npm run summarize:draft >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Retain draft and source health
+      - name: Retain run and source health for diagnostics
         uses: actions/upload-artifact@v7
         with:
-          name: ai-weekly-candidates-${{ github.run_id }}
+          name: ai-weekly-run-${{ github.run_id }}
           path: |
             work/data/drafts/*.json
             work/data/source-health/*.json
           if-no-files-found: error
-          retention-days: 35
+          retention-days: 14
+
+      - name: Publish the valid run to Sites
+        env:
+          SITES_INGEST_URL: ${{ secrets.SITES_INGEST_URL }}
+          SITES_INGEST_TOKEN: ${{ secrets.SITES_INGEST_TOKEN }}
+        run: npm run publish:latest

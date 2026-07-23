@@ -7,28 +7,35 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "npm run validate:issue && vite build && vite build --ssr app/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "build": "npm run validate:seed && node scripts/prepare-build.mjs && vite build && node scripts/finalize-sites-build.mjs && vite build --ssr app/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "collect": "node scripts/collect.mjs",
+    "db:generate": "drizzle-kit generate",
+    "publish:latest": "node scripts/publish-latest.mjs",
     "summarize:draft": "node scripts/summarize-draft.mjs",
-    "validate:issue": "node scripts/validate-issue.mjs",
-    "test": "npm run test:collectors && npm run build && npm run test:render",
-    "test:collectors": "node --test tests/collectors/*.test.mjs tests/issue-validation.test.mjs",
-    "test:render": "node --test tests/rendered-html.test.mjs",
+    "validate:seed": "node scripts/validate-seed.mjs",
+    "test": "npm run test:collectors && npm run test:publication && npm run build && npm run test:render",
+    "test:collectors": "node --test tests/collectors/*.test.mjs",
+    "test:publication": "node --test tests/publication.test.mjs",
+    "test:render": "node --test tests/rendered-html.test.mjs tests/worker-api.test.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "cheerio": "1.2.0",
+    "drizzle-orm": "0.45.2",
     "fast-xml-parser": "5.10.1",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.46.0",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.4",
+    "drizzle-kit": "0.31.10",
     "typescript": "5.9.3",
-    "vite": "8.1.5"
+    "vite": "8.1.5",
+    "wrangler": "4.113.0"
   },
   "overrides": {
     "cheerio@1.2.0": {

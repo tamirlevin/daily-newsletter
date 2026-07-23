@@ -21,7 +21,7 @@ function alphaArticle(url) {
     </html>`;
 }
 
-test("builds a local review draft and source-health report without source prose", async () => {
+test("builds a publishable run and source-health report without source prose", async () => {
   const responses = new Map([
     [
       "https://tldr.tech/api/rss/ai",
@@ -192,7 +192,7 @@ test("builds a local review draft and source-health report without source prose"
   });
 
   assert.equal(draft.kind, "collection-draft");
-  assert.equal(draft.status, "needs-editorial-review");
+  assert.equal(draft.status, "ready-to-publish");
   assert.equal(draft.issueDate, "2026-07-23");
   assert.equal(draft.items.length, 10);
   assert.equal(draft.sourceHealth.status, "healthy");

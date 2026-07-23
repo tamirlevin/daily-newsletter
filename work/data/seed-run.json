@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "kind": "collection-draft",
+  "issueDate": "2026-07-23",
+  "generatedAt": "2026-07-23T05:06:16.817Z",
+  "status": "ready-to-publish",
+  "period": {
+    "start": "2026-07-16T05:06:16.817Z",
+    "end": "2026-07-23T05:06:16.817Z",
+    "lookbackDays": 7
+  },
+  "editorialPolicy": {
+    "targetMix": {
+      "executive": 0.7,
+      "technical": 0.2,
+      "research": 0.1
+    },
+    "selectedMix": {
+      "executive": 7,
+      "technical": 2,
+      "research": 1
+    },
+    "directXCoverage": {
+      "capturedFromConfiguredSources": 14,
+      "selected": 0,
+      "directIngestionStatus": "not-configured"
+    }
+  },
+  "sourceHealth": {
+    "status": "healthy",
+    "healthySources": 7,
+    "configuredSources": 7
+  },
+  "items": [
+    {
+      "id": "a5ab872c216c2f94",
+      "title": "Safety and alignment in an era of long-horizon models",
+      "url": "https://openai.com/index/safety-alignment-long-horizon-models",
+      "publishedAt": "2026-07-20T10:00:00.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "openai.com",
+      "discoveredBy": ["OpenAI News", "TLDR AI", "Hacker News"],
+      "sourceAttributions": [
+        {
+          "sourceName": "OpenAI News",
+          "sourceUrl": "https://openai.com/index/safety-alignment-long-horizon-models"
+        },
+        {
+          "sourceName": "TLDR AI",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-21"
+        },
+        {
+          "sourceName": "Hacker News",
+          "sourceUrl": "https://news.ycombinator.com/item?id=48983108"
+        }
+      ],
+      "selectionReasons": [
+        "commercial or operating impact",
+        "policy, security, or governance impact",
+        "seen in 2 discovery channels",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "e92da1656dac27d8",
+      "title": "Introducing LM Studio Bionic: the AI agent for open models",
+      "url": "https://lmstudio.ai/blog/introducing-lm-studio-bionic",
+      "publishedAt": "2026-07-17T00:00:00.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "lmstudio.ai",
+      "discoveredBy": ["TLDR AI", "Hacker News"],
+      "sourceAttributions": [
+        {
+          "sourceName": "TLDR AI",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-17"
+        },
+        {
+          "sourceName": "Hacker News",
+          "sourceUrl": "https://news.ycombinator.com/item?id=48939662"
+        }
+      ],
+      "selectionReasons": [
+        "commercial or operating impact",
+        "high-signal newsletter section",
+        "seen in 2 discovery channels"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "d925d8c91f460a44",
+      "title": "OpenAI and Hugging Face partner to address security incident during model evaluation",
+      "url": "https://openai.com/index/hugging-face-model-evaluation-security-incident",
+      "publishedAt": "2026-07-21T07:00:00.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "openai.com",
+      "discoveredBy": ["OpenAI News", "Hacker News", "TLDR AI"],
+      "sourceAttributions": [
+        {
+          "sourceName": "OpenAI News",
+          "sourceUrl": "https://openai.com/index/hugging-face-model-evaluation-security-incident"
+        },
+        {
+          "sourceName": "Hacker News",
+          "sourceUrl": "https://news.ycombinator.com/item?id=48997548"
+        },
+        {
+          "sourceName": "TLDR AI",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-22"
+        }
+      ],
+      "selectionReasons": [
+        "policy, security, or governance impact",
+        "seen in 2 discovery channels",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "d106b7c971cab4e4",
+      "title": "Anthropic Ships Claude Security to Catch Vulnerabilities Before You Commit",
+      "url": "https://claude.com/product/claude-security",
+      "publishedAt": "2026-07-22T18:02:57.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "claude.com",
+      "discoveredBy": ["AlphaSignal"],
+      "sourceAttributions": [
+        {
+          "sourceName": "AlphaSignal",
+          "sourceUrl": "https://alphasignal.ai/news/anthropic-ships-claude-security-to-catch-vulnerabilities-before-you-commit"
+        }
+      ],
+      "selectionReasons": [
+        "policy, security, or governance impact",
+        "material launch or availability change",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "330d5436cf0054c5",
+      "title": "Microsoft strikes 'multibillion-dollar' deal with French AI firm Mistral",
+      "url": "https://www.france24.com/en/france/20260721-microsoft-strikes-multi-billion-dollar-deal-to-expand-france-ai-firm-mistral",
+      "publishedAt": "2026-07-22T09:12:58.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "france24.com",
+      "discoveredBy": ["Hacker News"],
+      "sourceAttributions": [
+        {
+          "sourceName": "Hacker News",
+          "sourceUrl": "https://news.ycombinator.com/"
+        }
+      ],
+      "selectionReasons": [
+        "market-moving transaction",
+        "major platform relevance"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "082c4173c70b0451",
+      "title": "Building AI infrastructure with the Effingham County community",
+      "url": "https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community",
+      "publishedAt": "2026-07-22T13:00:00.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "openai.com",
+      "discoveredBy": ["OpenAI News"],
+      "sourceAttributions": [
+        {
+          "sourceName": "OpenAI News",
+          "sourceUrl": "https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community"
+        }
+      ],
+      "selectionReasons": [
+        "market-moving transaction",
+        "material launch or availability change",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "46ab9b61ad22122a",
+      "title": "Alibaba open-sources its AI chip software stack at WAIC, targeting Nvidia's CUDA lock-in",
+      "url": "https://thenextweb.com/news/alibaba-t-head-sail-open-source-nvidia-cuda-alternative",
+      "publishedAt": "2026-07-20T00:00:00.000Z",
+      "editorialLane": "executive",
+      "originalDomain": "thenextweb.com",
+      "discoveredBy": ["TLDR AI"],
+      "sourceAttributions": [
+        {
+          "sourceName": "TLDR AI",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-20"
+        }
+      ],
+      "selectionReasons": [
+        "commercial or operating impact",
+        "policy, security, or governance impact"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "89303d54870d4885",
+      "title": "ABot-World-0: Infinite Interactive World Rollout on a Single Desktop GPU",
+      "url": "https://arxiv.org/abs/2607.19191",
+      "publishedAt": "2026-07-21T15:26:50.000Z",
+      "editorialLane": "technical",
+      "originalDomain": "arxiv.org",
+      "discoveredBy": ["Hugging Face Daily Papers"],
+      "sourceAttributions": [
+        {
+          "sourceName": "Hugging Face Daily Papers",
+          "sourceUrl": "https://huggingface.co/papers/2607.19191"
+        }
+      ],
+      "selectionReasons": [
+        "implementation relevance",
+        "builder workflow relevance",
+        "primary-source evidence",
+        "research-community attention"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "3fc8bdb7cc18e687",
+      "title": "Gigatoken (GitHub Repo)",
+      "url": "https://github.com/marcelroed/gigatoken",
+      "publishedAt": "2026-07-22T00:00:00.000Z",
+      "editorialLane": "technical",
+      "originalDomain": "github.com",
+      "discoveredBy": ["TLDR AI", "Hacker News"],
+      "sourceAttributions": [
+        {
+          "sourceName": "TLDR AI",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-22"
+        },
+        {
+          "sourceName": "Hacker News",
+          "sourceUrl": "https://news.ycombinator.com/"
+        }
+      ],
+      "selectionReasons": [
+        "implementation relevance",
+        "builder workflow relevance",
+        "seen in 2 discovery channels"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "id": "8aab1f16dc07e682",
+      "title": "RESOURCE2SKILL: Distilling Executable Agent Skills from Human-Created Multimodal Resources",
+      "url": "https://arxiv.org/abs/2606.29538",
+      "publishedAt": "2026-07-16T00:00:00.000Z",
+      "editorialLane": "research",
+      "originalDomain": "arxiv.org",
+      "discoveredBy": ["Hugging Face Daily Papers"],
+      "sourceAttributions": [
+        {
+          "sourceName": "Hugging Face Daily Papers",
+          "sourceUrl": "https://huggingface.co/papers/2606.29538"
+        }
+      ],
+      "selectionReasons": [
+        "research result",
+        "evaluation or evidence",
+        "primary-source evidence",
+        "high-consequence research topic"
+      ],
+      "flags": {
+        "promotionalLanguage": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    }
+  ]
+}
