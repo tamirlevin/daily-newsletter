@@ -578,6 +578,60 @@ function SystemView() {
             </li>
           </ul>
         </article>
+
+        <article className="system-panel system-panel--durability">
+          <div className="durability-copy">
+            <span className="kicker">Durability &amp; session control</span>
+            <h2>Built to be resumed, not remembered.</h2>
+            <p>
+              The application and its operating memory live together in
+              version control. The repository&apos;s boot file gives every new
+              Codex session the same architecture, durable decisions, safe
+              change paths, and release checks—so control stays with the
+              project rather than any single conversation.
+            </p>
+            <div className="repository-links" aria-label="Project repository">
+              <a
+                href="https://github.com/tamirlevin/daily-newsletter"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open the repository <span aria-hidden="true">↗</span>
+              </a>
+              <a
+                href="https://github.com/tamirlevin/daily-newsletter/blob/main/AGENTS.md"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Read the session boot file
+              </a>
+            </div>
+          </div>
+
+          <dl className="durability-list">
+            <div>
+              <dt>Durability</dt>
+              <dd>
+                Source, architecture, and operating memory survive individual
+                sessions.
+              </dd>
+            </div>
+            <div>
+              <dt>Session control</dt>
+              <dd>
+                New Codex sessions load the repository instructions before
+                making changes.
+              </dd>
+            </div>
+            <div>
+              <dt>Change discipline</dt>
+              <dd>
+                Invariants, file maps, tests, and deployment checks make
+                handoffs repeatable.
+              </dd>
+            </div>
+          </dl>
+        </article>
       </div>
     </section>
   );

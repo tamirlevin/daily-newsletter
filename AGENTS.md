@@ -43,7 +43,9 @@ promote flow, or separate X collector. The reader has three views: **Latest**,
    specific X link discovered through an existing public source may still be
    selected.
 9. Preserve the current editorial design language unless the user explicitly
-   requests a redesign.
+   requests a redesign. The How it works view should continue to explain
+   repository durability and session control, with links to the repository and
+   this boot file.
 10. GitHub Pages is no longer the active deployment architecture. Do not
     restore a Pages deployment workflow unless the user changes that decision.
 

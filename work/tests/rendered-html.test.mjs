@@ -6,6 +6,13 @@ async function renderedHtml() {
   return readFile(new URL("../dist/client/index.html", import.meta.url), "utf8");
 }
 
+async function clientBundle() {
+  const html = await renderedHtml();
+  const source = html.match(/<script[^>]+src="([^"]+\.js)"/i)?.[1];
+  assert.ok(source, "Expected the production client bundle");
+  return readFile(new URL(`../dist/client${source}`, import.meta.url), "utf8");
+}
+
 test("statically renders the complete public briefing", async () => {
   const html = await renderedHtml();
 
@@ -50,4 +57,15 @@ test("renders accessible reader controls", async () => {
   assert.equal((html.match(/aria-pressed=/g) ?? []).length, 4);
   assert.match(html, /class="skip-link" href="#view-content"/i);
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
+});
+
+test("links the system page to its durable repository memory", async () => {
+  const bundle = await clientBundle();
+
+  assert.match(
+    bundle,
+    /https:\/\/github\.com\/tamirlevin\/daily-newsletter/,
+  );
+  assert.match(bundle, /daily-newsletter\/blob\/main\/AGENTS\.md/);
+  assert.match(bundle, /Built to be resumed, not remembered\./);
 });
