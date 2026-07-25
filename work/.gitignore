@@ -36,5 +36,6 @@ yarn-error.log*
 !.dev.vars.example
 
 # Generated collector runs are retained as GitHub Actions artifacts, not source.
-/data/drafts/*.json
-/data/source-health/*.json
+/data/drafts/**/*.json
+/data/recent/**/*.json
+/data/source-health/**/*.json

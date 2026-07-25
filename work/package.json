@@ -10,6 +10,8 @@
     "build": "npm run validate:seed && node scripts/prepare-build.mjs && vite build && node scripts/finalize-sites-build.mjs && vite build --ssr app/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "collect": "node scripts/collect.mjs",
     "db:generate": "drizzle-kit generate",
+    "deliver:daily-email": "node scripts/request-daily-email.mjs",
+    "fetch:recent": "node scripts/fetch-recent-urls.mjs",
     "publish:latest": "node scripts/publish-latest.mjs",
     "summarize:draft": "node scripts/summarize-draft.mjs",
     "validate:seed": "node scripts/validate-seed.mjs",

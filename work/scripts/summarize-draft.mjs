@@ -9,6 +9,27 @@ const projectRoot = path.resolve(
   "..",
 );
 
+function parseArguments(argv) {
+  const options = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index];
+    if (!argument.startsWith("--")) {
+      throw new Error(`Unknown argument: ${argument}`);
+    }
+    const [rawKey, inlineValue] = argument.slice(2).split("=", 2);
+    const key = rawKey.replace(/-([a-z])/g, (_, letter) =>
+      letter.toLocaleUpperCase(),
+    );
+    const value =
+      inlineValue ??
+      (argv[index + 1] && !argv[index + 1].startsWith("--")
+        ? argv[++index]
+        : true);
+    options[key] = value;
+  }
+  return options;
+}
+
 function tableText(value) {
   return String(value ?? "—").replace(/\|/g, "\\|").replace(/\s+/g, " ");
 }
@@ -23,14 +44,16 @@ async function latestJson(directory) {
 }
 
 async function main() {
-  const draftPath = process.argv[2]
-    ? path.resolve(projectRoot, process.argv[2])
-    : await latestJson(path.resolve(projectRoot, "data/drafts"));
+  const options = parseArguments(process.argv.slice(2));
+  const cadence = String(options.cadence ?? "weekly").toLocaleLowerCase();
+  const draftPath = options.path
+    ? path.resolve(projectRoot, options.path)
+    : await latestJson(path.resolve(projectRoot, "data/drafts", cadence));
   const draft = JSON.parse(await readFile(draftPath, "utf8"));
   const mix = draft.editorialPolicy?.selectedMix ?? {};
 
   const lines = [
-    "# AI Weekly Brief — publication run",
+    `# AI ${draft.cadence === "daily" ? "Daily" : "Weekly"} Brief — publication run`,
     "",
     `**Issue date:** ${tableText(draft.issueDate)}  `,
     `**Source health:** ${tableText(draft.sourceHealth?.status)} (${
@@ -40,7 +63,7 @@ async function main() {
       mix.technical ?? 0
     } technical · ${mix.research ?? 0} research`,
     "",
-    "> A complete run is published automatically after the site verifies the story count, 7/2/1 mix, source health, unique links, and evidence flags.",
+    `> A complete run is published automatically after the site verifies the ${draft.items?.length ?? 0}-story ${mix.executive ?? 0}/${mix.technical ?? 0}/${mix.research ?? 0} mix, source health, unique links, and evidence flags.`,
     "",
     "| Lane | Candidate | Discovery | Evidence | Score |",
     "| --- | --- | --- | --- | ---: |",

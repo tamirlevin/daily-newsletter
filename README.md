@@ -1,21 +1,23 @@
-# AI Weekly Brief
+# AI Daily + Weekly Brief
 
-A public, automatically refreshed AI briefing for executive, technical, and
-research readers.
+Public, automatically refreshed Daily and Weekly AI briefings for executive,
+technical, and research readers.
 
 Live site:
 [ai-weekly-brief.tamirlevin300024.chatgpt.site](https://ai-weekly-brief.tamirlevin300024.chatgpt.site/)
 
 The system has two moving parts:
 
-- GitHub Actions collects, deduplicates, ranks, and checks ten stories every
-  Friday or on demand.
-- Sites publishes the latest valid run and retains the current run plus the two
-  immediately before it.
+- GitHub Actions uses the same collectors to assemble five Daily stories and
+  ten Weekly stories on separate schedules.
+- Sites validates, stores, and serves both cadences. It retains seven
+  successful Daily runs and three successful Weekly runs.
+- An accepted Daily run triggers one idempotent email to the configured
+  recipient. Weekly remains a web briefing.
 
-The reader includes **Latest**, **History**, and **How it works** views. Direct X
-collection is intentionally excluded; specific X links discovered through the
-configured public sources remain eligible.
+The reader includes **Daily**, **Weekly**, cadence-specific **History**, and
+**How it works** views. Direct X collection is intentionally excluded; specific
+X links discovered through the configured public sources remain eligible.
 
 Implementation and local operating instructions live in
 [`work/README.md`](work/README.md).

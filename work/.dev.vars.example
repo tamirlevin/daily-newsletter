@@ -1,1 +1,5 @@
 INGEST_TOKEN=replace-with-a-long-random-secret
+RESEND_API_KEY=replace-with-your-resend-api-key
+EMAIL_FROM=AI Brief <onboarding@resend.dev>
+DAILY_EMAIL_TO=recipient@example.com
+PUBLIC_BASE_URL=https://ai-weekly-brief.tamirlevin300024.chatgpt.site

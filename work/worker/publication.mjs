@@ -1,11 +1,29 @@
-export const RETAINED_RUNS = 3;
-export const EXPECTED_MIX = Object.freeze({
-  executive: 7,
-  technical: 2,
-  research: 1,
-});
+import {
+  BRIEFING_PROFILES,
+  briefingProfile,
+  normalizeCadence,
+  runIdFor,
+} from "../lib/briefing-profiles.mjs";
 
-const ALLOWED_LANES = new Set(Object.keys(EXPECTED_MIX));
+export const RETAINED_RUNS_BY_CADENCE = Object.freeze(
+  Object.fromEntries(
+    Object.entries(BRIEFING_PROFILES).map(([cadence, profile]) => [
+      cadence,
+      profile.retainedRuns,
+    ]),
+  ),
+);
+
+export const EXPECTED_MIX_BY_CADENCE = Object.freeze(
+  Object.fromEntries(
+    Object.entries(BRIEFING_PROFILES).map(([cadence, profile]) => [
+      cadence,
+      profile.expectedMix,
+    ]),
+  ),
+);
+
+const ALLOWED_LANES = new Set(["executive", "technical", "research"]);
 
 function requiredText(value, field) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -40,18 +58,29 @@ export function validatePublicationRun(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Run payload must be an object");
   }
-  if (payload.schemaVersion !== 1) {
+  if (payload.schemaVersion !== 2) {
     throw new Error("Unsupported run schema");
   }
   if (payload.kind !== "collection-draft") {
     throw new Error("Unsupported run kind");
   }
 
+  const cadence = normalizeCadence(payload.cadence);
+  const profile = briefingProfile(cadence);
   const issueDate = requiredText(payload.issueDate, "issueDate");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
     throw new Error("issueDate must use YYYY-MM-DD");
   }
   const generatedAt = validIsoDate(payload.generatedAt, "generatedAt");
+  const runId = requiredText(payload.runId, "runId");
+  if (runId !== runIdFor(cadence, issueDate)) {
+    throw new Error(
+      `runId must be ${runIdFor(cadence, issueDate)}`,
+    );
+  }
+  if (payload.editorialPolicy?.profile !== cadence) {
+    throw new Error(`editorialPolicy.profile must be ${cadence}`);
+  }
 
   const sourceHealth = payload.sourceHealth;
   if (!sourceHealth || typeof sourceHealth !== "object") {
@@ -78,8 +107,13 @@ export function validatePublicationRun(payload) {
     );
   }
 
-  if (!Array.isArray(payload.items) || payload.items.length !== 10) {
-    throw new Error("A publishable run must contain exactly 10 stories");
+  if (
+    !Array.isArray(payload.items) ||
+    payload.items.length !== profile.maxItems
+  ) {
+    throw new Error(
+      `A publishable ${cadence} run must contain exactly ${profile.maxItems} stories`,
+    );
   }
 
   const itemIds = new Set();
@@ -127,7 +161,7 @@ export function validatePublicationRun(payload) {
     }
   }
 
-  for (const [lane, expected] of Object.entries(EXPECTED_MIX)) {
+  for (const [lane, expected] of Object.entries(profile.expectedMix)) {
     if (mix[lane] !== expected) {
       throw new Error(
         `Editorial mix must contain ${expected} ${lane} stories`,
@@ -136,11 +170,14 @@ export function validatePublicationRun(payload) {
   }
 
   return {
-    runId: generatedAt,
+    runId,
+    cadence,
     issueDate,
     generatedAt,
     sourceHealth: sourceHealth.status,
     mix,
+    retainedRuns: profile.retainedRuns,
+    emailEligible: profile.emailEnabled,
   };
 }
 

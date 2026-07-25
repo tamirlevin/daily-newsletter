@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
-import seedData from "@/data/seed-run.json";
+import dailySeedData from "@/data/seed-daily-run.json";
+import weeklySeedData from "@/data/seed-run.json";
 import { BriefingApp, type PublicationRun } from "./briefing-app";
 import "./globals.css";
 
@@ -12,7 +13,12 @@ if (!root) {
 
 const app = (
   <StrictMode>
-    <BriefingApp seedRun={seedData as PublicationRun} />
+    <BriefingApp
+      seedRuns={{
+        daily: [dailySeedData as PublicationRun],
+        weekly: [weeklySeedData as PublicationRun],
+      }}
+    />
   </StrictMode>
 );
 
