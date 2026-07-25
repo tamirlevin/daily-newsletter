@@ -23,6 +23,10 @@ import {
   publicCandidate,
 } from "./shared.mjs";
 import { collectTldr } from "./tldr.mjs";
+import {
+  normalizeCadence,
+  runIdFor,
+} from "../briefing-profiles.mjs";
 
 function failedHealth(source, error) {
   return {
@@ -167,12 +171,28 @@ function isDirectXLink(candidate) {
 
 export async function collectBrief({
   config,
+  cadence = "weekly",
   asOf = new Date(),
-  lookbackDays = config.lookbackDays,
-  maxItems = config.maxItems,
+  lookbackDays,
+  maxItems,
+  excludedUrls = [],
   fetchText = defaultFetchText,
 }) {
-  validatePolicy({ ...config, maxItems });
+  const normalizedCadence = normalizeCadence(cadence);
+  const cadenceProfile = config.cadences?.[normalizedCadence];
+  if (!cadenceProfile) {
+    throw new Error(
+      `Missing editorial configuration for ${normalizedCadence}`,
+    );
+  }
+  const resolvedLookbackDays = lookbackDays ?? cadenceProfile.lookbackDays;
+  const resolvedMaxItems = maxItems ?? cadenceProfile.maxItems;
+  const editorialMix = cadenceProfile.editorialMix;
+  validatePolicy({
+    ...config,
+    editorialMix,
+    maxItems: resolvedMaxItems,
+  });
   const normalizedAsOf = new Date(asOf);
   if (Number.isNaN(normalizedAsOf.valueOf())) {
     throw new Error(`Invalid as-of date: ${asOf}`);
@@ -185,7 +205,7 @@ export async function collectBrief({
         return await sourceCollector(source)({
           source,
           asOf: normalizedAsOf,
-          lookbackDays,
+          lookbackDays: resolvedLookbackDays,
           concurrency: config.requestConcurrency,
           fetchText,
         });
@@ -203,21 +223,38 @@ export async function collectBrief({
   if (rawCandidates.length === 0) {
     throw new Error("All configured sources failed or returned no candidates");
   }
-
-  const preliminary = dedupeCandidates(rawCandidates, { fuzzy: false }).map(
-    (candidate) => scoreCandidate(candidate, config, normalizedAsOf),
+  const excludedCanonicalUrls = new Set(
+    excludedUrls
+      .map((url) => canonicalizeUrl(url))
+      .filter(Boolean),
   );
+  const isExcluded = (candidate) =>
+    excludedCanonicalUrls.has(
+      canonicalizeUrl(candidate.canonicalUrl ?? candidate.url),
+    );
+  const eligibleCandidates = rawCandidates.filter(
+    (candidate) => !isExcluded(candidate),
+  );
+  if (eligibleCandidates.length === 0) {
+    throw new Error(
+      "All collected candidates were already used in recent runs",
+    );
+  }
+
+  const preliminary = dedupeCandidates(eligibleCandidates, {
+    fuzzy: false,
+  }).map((candidate) => scoreCandidate(candidate, config, normalizedAsOf));
   const enrichmentPoolSize = Math.min(
     preliminary.length,
     Math.max(
-      maxItems,
-      maxItems * (config.enrichmentPoolMultiplier ?? 3),
+      resolvedMaxItems,
+      resolvedMaxItems * (config.enrichmentPoolMultiplier ?? 3),
     ),
   );
   const enrichmentPool = selectEditorialMix(
     preliminary,
     enrichmentPoolSize,
-    config.editorialMix,
+    editorialMix,
     config.selectionRules,
   );
   const enriched = await mapWithConcurrency(
@@ -225,13 +262,13 @@ export async function collectBrief({
     config.requestConcurrency,
     (candidate) => enrichCandidate(candidate, { fetchText, health }),
   );
-  const rescored = dedupeCandidates(enriched, { fuzzy: true }).map((candidate) =>
-    scoreCandidate(candidate, config, normalizedAsOf),
-  );
+  const rescored = dedupeCandidates(enriched, { fuzzy: true })
+    .filter((candidate) => !isExcluded(candidate))
+    .map((candidate) => scoreCandidate(candidate, config, normalizedAsOf));
   const selected = selectEditorialMix(
     rescored,
-    Math.min(maxItems, rescored.length),
-    config.editorialMix,
+    Math.min(resolvedMaxItems, rescored.length),
+    editorialMix,
     config.selectionRules,
   );
   for (const sourceHealth of health) {
@@ -249,23 +286,29 @@ export async function collectBrief({
       : "failed";
   const generatedAt = normalizedAsOf.toISOString();
   const periodStart = new Date(normalizedAsOf);
-  periodStart.setUTCDate(periodStart.getUTCDate() - lookbackDays);
+  periodStart.setUTCDate(
+    periodStart.getUTCDate() - resolvedLookbackDays,
+  );
   const issueDate = localDateKey(normalizedAsOf, config.timeZone);
+  const runId = runIdFor(normalizedCadence, issueDate);
 
   const healthReport = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "source-health",
-    runId: generatedAt,
+    cadence: normalizedCadence,
+    runId,
     status,
     generatedAt,
     period: {
       start: periodStart.toISOString(),
       end: generatedAt,
-      lookbackDays,
+      lookbackDays: resolvedLookbackDays,
     },
     sources: health,
     totals: {
       rawCandidates: rawCandidates.length,
+      excludedFromRecentRuns:
+        rawCandidates.length - eligibleCandidates.length,
       preliminaryCandidates: preliminary.length,
       enrichmentPoolCandidates: enrichmentPool.length,
       postEnrichmentCandidates: rescored.length,
@@ -281,20 +324,24 @@ export async function collectBrief({
       selectedNeedingPrimaryEvidenceReview: selected.filter(
         (candidate) => candidate.flags?.needsPrimaryEvidenceReview,
       ).length,
-      directXLinksInRawCandidates: rawCandidates.filter(isDirectXLink).length,
+      directXLinksInRawCandidates:
+        eligibleCandidates.filter(isDirectXLink).length,
       directXLinksInSelection: selected.filter(isDirectXLink).length,
     },
   };
 
   const draft = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "collection-draft",
+    cadence: normalizedCadence,
+    runId,
     issueDate,
     generatedAt,
     status: "ready-to-publish",
     period: healthReport.period,
     editorialPolicy: {
-      targetMix: config.editorialMix,
+      profile: normalizedCadence,
+      targetMix: editorialMix,
       selectedMix: countEditorialMix(selected),
       sourceSignals: config.sourceSignals,
       selectionRules: config.selectionRules,

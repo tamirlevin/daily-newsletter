@@ -1,21 +1,21 @@
-name: Collect weekly briefing
+name: Collect daily briefing
 
 on:
   schedule:
-    # Friday 08:00 AEST / 09:00 AEDT.
-    - cron: "0 22 * * 4"
+    # Every day at 08:00 AEST / 09:00 AEDT.
+    - cron: "0 22 * * *"
   workflow_dispatch:
     inputs:
       lookback_days:
         description: Days of source coverage
         required: true
-        default: "7"
+        default: "3"
 
 permissions:
   contents: read
 
 concurrency:
-  group: collect-weekly-briefing
+  group: collect-daily-briefing
   cancel-in-progress: false
 
 jobs:
@@ -41,26 +41,39 @@ jobs:
       - name: Test source and editorial rules
         run: npm run test:collectors
 
+      - name: Load recently published Daily links
+        env:
+          SITES_INGEST_URL: ${{ secrets.SITES_INGEST_URL }}
+        run: npm run fetch:recent -- --cadence daily
+
       - name: Collect and rank candidates
         env:
-          LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
-        run: npm run collect -- --cadence weekly --lookback-days "$LOOKBACK_DAYS"
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '3' }}
+        run: npm run collect -- --cadence daily --lookback-days "$LOOKBACK_DAYS" --exclude-file data/recent/daily.json
 
       - name: Add readable run summary
-        run: npm run summarize:draft -- --cadence weekly >> "$GITHUB_STEP_SUMMARY"
+        run: npm run summarize:draft -- --cadence daily >> "$GITHUB_STEP_SUMMARY"
 
       - name: Retain run and source health for diagnostics
         uses: actions/upload-artifact@v7
         with:
-          name: ai-weekly-run-${{ github.run_id }}
+          name: ai-daily-run-${{ github.run_id }}
           path: |
-            work/data/drafts/weekly/*.json
-            work/data/source-health/weekly/*.json
+            work/data/drafts/daily/*.json
+            work/data/source-health/daily/*.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
       - name: Publish the valid run to Sites
+        id: publish
         env:
           SITES_INGEST_URL: ${{ secrets.SITES_INGEST_URL }}
           SITES_INGEST_TOKEN: ${{ secrets.SITES_INGEST_TOKEN }}
-        run: npm run publish:latest -- --cadence weekly
+        run: npm run publish:latest -- --cadence daily
+
+      - name: Deliver the accepted Daily email
+        if: steps.publish.outputs.email_eligible == 'true'
+        env:
+          SITES_INGEST_URL: ${{ secrets.SITES_INGEST_URL }}
+          SITES_INGEST_TOKEN: ${{ secrets.SITES_INGEST_TOKEN }}
+        run: npm run deliver:daily-email -- --run-id "${{ steps.publish.outputs.run_id }}"

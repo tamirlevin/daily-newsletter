@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 2,
+  "kind": "collection-draft",
+  "cadence": "daily",
+  "runId": "daily:2026-07-25",
+  "issueDate": "2026-07-25",
+  "generatedAt": "2026-07-25T10:15:56.123Z",
+  "status": "ready-to-publish",
+  "period": {
+    "start": "2026-07-22T10:15:56.123Z",
+    "end": "2026-07-25T10:15:56.123Z",
+    "lookbackDays": 3
+  },
+  "editorialPolicy": {
+    "profile": "daily",
+    "targetMix": {
+      "executive": 0.6,
+      "technical": 0.2,
+      "research": 0.2
+    },
+    "selectedMix": {
+      "executive": 3,
+      "technical": 1,
+      "research": 1
+    },
+    "sourceSignals": {
+      "discoveryWeight": {
+        "diverse-newsletter": 1,
+        "community-signal": 0.85,
+        "official-lab": 0.6,
+        "research-index": 0.55
+      },
+      "evidenceAuthority": {
+        "diverse-newsletter": 0.45,
+        "community-signal": 0.25,
+        "official-lab": 1,
+        "research-index": 0.85
+      }
+    },
+    "selectionRules": {
+      "maxUncorroboratedOfficialItemsPerVendor": 1,
+      "maxSoleDiscoveryItemsBySource": {
+        "hacker-news": 3
+      },
+      "maxSoleDiscoveryItemsBySourcePerLane": {
+        "hacker-news": 1
+      }
+    },
+    "note": "Newsletters, Hacker News, and Hugging Face are discovery signals. Official lab sources are primary evidence, not independent corroboration. Published copy must be written independently.",
+    "directXCoverage": {
+      "capturedFromConfiguredSources": 3,
+      "selected": 0,
+      "directIngestionStatus": "not-configured"
+    }
+  },
+  "sourceHealth": {
+    "status": "healthy",
+    "healthySources": 7,
+    "configuredSources": 7
+  },
+  "items": [
+    {
+      "title": "Understanding the AI economy",
+      "url": "https://blog.google/innovation-and-ai/technology/research/understanding-the-ai-economy",
+      "publishedAt": "2026-07-24T00:00:00.000Z",
+      "section": "Miscellaneous",
+      "readingTime": "7 minute read",
+      "sourceRole": "diverse-newsletter",
+      "sourceKind": "discovery",
+      "sourceAttributions": [
+        {
+          "sourceId": "tldr-ai",
+          "sourceName": "TLDR AI",
+          "sourceRole": "diverse-newsletter",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-24",
+          "section": "Miscellaneous",
+          "vendor": null
+        },
+        {
+          "sourceId": "hacker-news",
+          "sourceName": "Hacker News",
+          "sourceRole": "community-signal",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://news.ycombinator.com/item?id=49020335",
+          "section": "Community discussion",
+          "vendor": null
+        }
+      ],
+      "id": "fd6648d06b6e33c0",
+      "canonicalUrl": "https://blog.google/innovation-and-ai/technology/research/understanding-the-ai-economy",
+      "originalDomain": "blog.google",
+      "discoveredBy": [
+        "TLDR AI",
+        "Hacker News"
+      ],
+      "discoverySourceCount": 2,
+      "primarySourceCount": 0,
+      "corroborationCount": 2,
+      "vendor": "google",
+      "reviewStatus": "needs-review",
+      "summaryStatus": "not-generated",
+      "evidenceUrls": [
+        "https://blog.google/innovation-and-ai/technology/research/understanding-the-ai-economy"
+      ],
+      "editorialLane": "executive",
+      "laneSignals": {
+        "executive": 5,
+        "technical": 0,
+        "research": 1.8
+      },
+      "score": 13.3,
+      "sourceSignals": {
+        "discoveryWeight": 1,
+        "evidenceAuthority": 1,
+        "discoverySourceCount": 2,
+        "primarySourceCount": 0
+      },
+      "selectionReasons": [
+        "executive lane",
+        "commercial or operating impact",
+        "market-moving transaction",
+        "seen in 2 discovery channels",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "originatedOnX": false,
+        "promotionalLanguage": false,
+        "officialOnly": false,
+        "officialNoise": false,
+        "communityLaunchPost": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "title": "AMD and Anthropic Sign Major Chips-and-Investment Deal",
+      "url": "https://www.wsj.com/tech/ai/amd-and-anthropic-sign-major-chips-and-investment-deal-4adfdc45?reflink=desktopwebshare_permalink&st=o7d3rp",
+      "publishedAt": "2026-07-23T00:00:00.000Z",
+      "section": "Headlines & Launches",
+      "readingTime": "3 minute read",
+      "sourceRole": "diverse-newsletter",
+      "sourceKind": "discovery",
+      "sourceAttributions": [
+        {
+          "sourceId": "tldr-ai",
+          "sourceName": "TLDR AI",
+          "sourceRole": "diverse-newsletter",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-23",
+          "section": "Headlines & Launches",
+          "vendor": null
+        }
+      ],
+      "id": "496592b837fecb7f",
+      "canonicalUrl": "https://www.wsj.com/tech/ai/amd-and-anthropic-sign-major-chips-and-investment-deal-4adfdc45?reflink=desktopwebshare_permalink&st=o7d3rp",
+      "originalDomain": "www.wsj.com",
+      "discoveredBy": [
+        "TLDR AI"
+      ],
+      "discoverySourceCount": 1,
+      "primarySourceCount": 0,
+      "corroborationCount": 1,
+      "vendor": null,
+      "reviewStatus": "needs-review",
+      "summaryStatus": "not-generated",
+      "editorialLane": "executive",
+      "laneSignals": {
+        "executive": 4.2,
+        "technical": 1.4,
+        "research": 0
+      },
+      "score": 11.21,
+      "sourceSignals": {
+        "discoveryWeight": 1,
+        "evidenceAuthority": 0.45,
+        "discoverySourceCount": 1,
+        "primarySourceCount": 0
+      },
+      "selectionReasons": [
+        "executive lane",
+        "commercial or operating impact",
+        "market-moving transaction",
+        "high-signal newsletter section"
+      ],
+      "flags": {
+        "originatedOnX": false,
+        "promotionalLanguage": false,
+        "officialOnly": false,
+        "officialNoise": false,
+        "communityLaunchPost": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "title": "OpenAI Presence",
+      "url": "https://openai.com/index/introducing-openai-presence",
+      "publishedAt": "2026-07-23T00:00:00.000Z",
+      "section": "Headlines & Launches",
+      "readingTime": "5 minute read",
+      "sourceRole": "diverse-newsletter",
+      "sourceKind": "discovery",
+      "sourceAttributions": [
+        {
+          "sourceId": "tldr-ai",
+          "sourceName": "TLDR AI",
+          "sourceRole": "diverse-newsletter",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-23",
+          "section": "Headlines & Launches",
+          "vendor": null
+        },
+        {
+          "sourceId": "hacker-news",
+          "sourceName": "Hacker News",
+          "sourceRole": "community-signal",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://news.ycombinator.com/item?id=49008089",
+          "section": "Community discussion",
+          "vendor": null
+        }
+      ],
+      "id": "839f7a51d7b587ae",
+      "canonicalUrl": "https://openai.com/index/introducing-openai-presence",
+      "originalDomain": "openai.com",
+      "discoveredBy": [
+        "TLDR AI",
+        "Hacker News"
+      ],
+      "discoverySourceCount": 2,
+      "primarySourceCount": 0,
+      "corroborationCount": 2,
+      "vendor": "openai",
+      "reviewStatus": "needs-review",
+      "summaryStatus": "not-generated",
+      "evidenceUrls": [
+        "https://openai.com/index/introducing-openai-presence"
+      ],
+      "editorialLane": "executive",
+      "laneSignals": {
+        "executive": 2.4,
+        "technical": 1.9,
+        "research": 0
+      },
+      "score": 11.1,
+      "sourceSignals": {
+        "discoveryWeight": 1,
+        "evidenceAuthority": 1,
+        "discoverySourceCount": 2,
+        "primarySourceCount": 0
+      },
+      "selectionReasons": [
+        "executive lane",
+        "commercial or operating impact",
+        "material launch or availability change",
+        "high-signal newsletter section",
+        "seen in 2 discovery channels",
+        "primary-source evidence"
+      ],
+      "flags": {
+        "originatedOnX": false,
+        "promotionalLanguage": false,
+        "officialOnly": false,
+        "officialNoise": false,
+        "communityLaunchPost": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "title": "AMD and Cerebras Launch AI Inference Solution",
+      "url": "https://www.cerebras.ai/press-release/amd-and-cerebras-announce-industry-leading-ultra-low-latency-and-high-throughput-ai-inference",
+      "publishedAt": "2026-07-24T00:00:00.000Z",
+      "section": "Quick Links",
+      "readingTime": "10 minute read",
+      "sourceRole": "diverse-newsletter",
+      "sourceKind": "discovery",
+      "sourceAttributions": [
+        {
+          "sourceId": "tldr-ai",
+          "sourceName": "TLDR AI",
+          "sourceRole": "diverse-newsletter",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://tldr.tech/ai/2026-07-24",
+          "section": "Quick Links",
+          "vendor": null
+        },
+        {
+          "sourceId": "hacker-news",
+          "sourceName": "Hacker News",
+          "sourceRole": "community-signal",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://news.ycombinator.com/item?id=49041347",
+          "section": "Community discussion",
+          "vendor": null
+        }
+      ],
+      "id": "04ccf492e1fd6805",
+      "canonicalUrl": "https://www.cerebras.ai/press-release/amd-and-cerebras-announce-industry-leading-ultra-low-latency-and-high-throughput-ai-inference",
+      "originalDomain": "www.cerebras.ai",
+      "discoveredBy": [
+        "TLDR AI",
+        "Hacker News"
+      ],
+      "discoverySourceCount": 2,
+      "primarySourceCount": 0,
+      "corroborationCount": 2,
+      "vendor": null,
+      "reviewStatus": "needs-review",
+      "summaryStatus": "not-generated",
+      "evidenceUrls": [
+        "https://www.cerebras.ai/press-release/amd-and-cerebras-announce-industry-leading-ultra-low-latency-and-high-throughput-ai-inference"
+      ],
+      "editorialLane": "technical",
+      "laneSignals": {
+        "executive": 0.7,
+        "technical": 2.3,
+        "research": 0
+      },
+      "score": 9.16,
+      "sourceSignals": {
+        "discoveryWeight": 1,
+        "evidenceAuthority": 0.45,
+        "discoverySourceCount": 2,
+        "primarySourceCount": 0
+      },
+      "selectionReasons": [
+        "technical lane",
+        "implementation relevance",
+        "technical capability detail",
+        "seen in 2 discovery channels"
+      ],
+      "flags": {
+        "originatedOnX": false,
+        "promotionalLanguage": false,
+        "officialOnly": false,
+        "officialNoise": false,
+        "communityLaunchPost": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    },
+    {
+      "title": "Color Pass-Through via Camera-Display Coupling",
+      "url": "https://arxiv.org/abs/2607.12746",
+      "publishedAt": "2026-07-14T00:00:00.000Z",
+      "section": "Research Watch",
+      "sourceRole": "research-index",
+      "sourceKind": "discovery",
+      "engagement": {
+        "upvotes": 18,
+        "comments": 2
+      },
+      "paperMetadata": {
+        "paperId": "2607.12746",
+        "submittedAt": "2026-07-24T00:00:00.000Z",
+        "organization": "MMLab-CUHK",
+        "projectPage": "https://lyricccco.github.io/color-pass-through"
+      },
+      "evidenceUrls": [
+        "https://arxiv.org/abs/2607.12746",
+        "https://huggingface.co/papers/2607.12746",
+        "https://lyricccco.github.io/color-pass-through"
+      ],
+      "sourceAttributions": [
+        {
+          "sourceId": "huggingface-papers",
+          "sourceName": "Hugging Face Daily Papers",
+          "sourceRole": "research-index",
+          "sourceKind": "discovery",
+          "sourceUrl": "https://huggingface.co/papers/2607.12746",
+          "section": "Daily Papers",
+          "vendor": null
+        }
+      ],
+      "id": "e3d99ec0751e3c96",
+      "canonicalUrl": "https://arxiv.org/abs/2607.12746",
+      "originalDomain": "arxiv.org",
+      "discoveredBy": [
+        "Hugging Face Daily Papers"
+      ],
+      "discoverySourceCount": 1,
+      "primarySourceCount": 0,
+      "corroborationCount": 1,
+      "vendor": null,
+      "reviewStatus": "needs-review",
+      "summaryStatus": "not-generated",
+      "editorialLane": "research",
+      "laneSignals": {
+        "executive": 0,
+        "technical": 1.4,
+        "research": 3.5
+      },
+      "score": 11.65,
+      "sourceSignals": {
+        "discoveryWeight": 0.55,
+        "evidenceAuthority": 0.95,
+        "discoverySourceCount": 1,
+        "primarySourceCount": 0
+      },
+      "selectionReasons": [
+        "research lane",
+        "research result",
+        "evaluation or evidence",
+        "primary-source evidence",
+        "high-consequence research topic"
+      ],
+      "flags": {
+        "originatedOnX": false,
+        "promotionalLanguage": false,
+        "officialOnly": false,
+        "officialNoise": false,
+        "communityLaunchPost": false,
+        "needsPrimaryEvidenceReview": false
+      }
+    }
+  ]
+}

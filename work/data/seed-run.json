@@ -1,6 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "collection-draft",
+  "cadence": "weekly",
+  "runId": "weekly:2026-07-23",
   "issueDate": "2026-07-23",
   "generatedAt": "2026-07-23T05:06:16.817Z",
   "status": "ready-to-publish",
@@ -10,6 +12,7 @@
     "lookbackDays": 7
   },
   "editorialPolicy": {
+    "profile": "weekly",
     "targetMix": {
       "executive": 0.7,
       "technical": 0.2,

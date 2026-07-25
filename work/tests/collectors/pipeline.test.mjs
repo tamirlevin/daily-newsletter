@@ -72,17 +72,30 @@ test("builds a publishable run and source-health report without source prose", a
   }
 
   const config = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     timeZone: "Australia/Melbourne",
-    lookbackDays: 7,
-    maxItems: 10,
+    cadences: {
+      daily: {
+        lookbackDays: 3,
+        maxItems: 5,
+        editorialMix: {
+          executive: 0.6,
+          technical: 0.2,
+          research: 0.2,
+        },
+      },
+      weekly: {
+        lookbackDays: 7,
+        maxItems: 10,
+        editorialMix: {
+          executive: 0.7,
+          technical: 0.2,
+          research: 0.1,
+        },
+      },
+    },
     enrichmentPoolMultiplier: 3,
     requestConcurrency: 2,
-    editorialMix: {
-      executive: 0.7,
-      technical: 0.2,
-      research: 0.1,
-    },
     sourceSignals: {
       discoveryWeight: {
         "diverse-newsletter": 1,
@@ -192,6 +205,10 @@ test("builds a publishable run and source-health report without source prose", a
   });
 
   assert.equal(draft.kind, "collection-draft");
+  assert.equal(draft.schemaVersion, 2);
+  assert.equal(draft.cadence, "weekly");
+  assert.equal(draft.runId, "weekly:2026-07-23");
+  assert.equal(draft.editorialPolicy.profile, "weekly");
   assert.equal(draft.status, "ready-to-publish");
   assert.equal(draft.issueDate, "2026-07-23");
   assert.equal(draft.items.length, 10);
@@ -217,6 +234,26 @@ test("builds a publishable run and source-health report without source prose", a
   assert.equal(
     draft.editorialPolicy.directXCoverage.directIngestionStatus,
     "not-configured",
+  );
+
+  const { draft: dailyDraft } = await collectBrief({
+    config,
+    cadence: "daily",
+    asOf: new Date("2026-07-23T00:00:00.000Z"),
+    lookbackDays: 7,
+    excludedUrls: [draft.items[0].url],
+    fetchText: fakeFetchText,
+  });
+  assert.equal(dailyDraft.runId, "daily:2026-07-23");
+  assert.equal(dailyDraft.items.length, 5);
+  assert.deepEqual(dailyDraft.editorialPolicy.selectedMix, {
+    executive: 3,
+    technical: 1,
+    research: 1,
+  });
+  assert.equal(
+    dailyDraft.items.some((item) => item.url === draft.items[0].url),
+    false,
   );
 
   for (const item of draft.items) {

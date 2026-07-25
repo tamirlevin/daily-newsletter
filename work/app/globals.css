@@ -858,6 +858,37 @@ a {
   line-height: 1.6;
 }
 
+.history-switch {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 28px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(251, 250, 246, 0.72);
+}
+
+.history-switch a {
+  min-width: 90px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+}
+
+.history-switch a:hover,
+.history-switch a:focus-visible {
+  color: var(--ink);
+}
+
+.history-switch a[aria-current="page"] {
+  background: var(--navy);
+  color: white;
+}
+
 .history-list {
   border-top: 1px solid var(--line-strong);
 }

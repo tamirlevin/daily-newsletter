@@ -1,15 +1,42 @@
 {
   "schemaVersion": 2,
   "timeZone": "Australia/Melbourne",
-  "lookbackDays": 7,
-  "maxItems": 10,
+  "cadences": {
+    "daily": {
+      "lookbackDays": 3,
+      "maxItems": 5,
+      "editorialMix": {
+        "executive": 0.6,
+        "technical": 0.2,
+        "research": 0.2
+      },
+      "expectedMix": {
+        "executive": 3,
+        "technical": 1,
+        "research": 1
+      },
+      "retainedRuns": 7,
+      "emailEnabled": true
+    },
+    "weekly": {
+      "lookbackDays": 7,
+      "maxItems": 10,
+      "editorialMix": {
+        "executive": 0.7,
+        "technical": 0.2,
+        "research": 0.1
+      },
+      "expectedMix": {
+        "executive": 7,
+        "technical": 2,
+        "research": 1
+      },
+      "retainedRuns": 3,
+      "emailEnabled": false
+    }
+  },
   "enrichmentPoolMultiplier": 3,
   "requestConcurrency": 4,
-  "editorialMix": {
-    "executive": 0.7,
-    "technical": 0.2,
-    "research": 0.1
-  },
   "sourceSignals": {
     "discoveryWeight": {
       "diverse-newsletter": 1,
