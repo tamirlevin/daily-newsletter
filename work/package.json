@@ -27,7 +27,7 @@
     "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.46.0",
+    "@cloudflare/vite-plugin": "1.47.0",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
@@ -35,7 +35,7 @@
     "drizzle-kit": "0.31.10",
     "typescript": "5.9.3",
     "vite": "8.1.5",
-    "wrangler": "4.113.0"
+    "wrangler": "4.114.0"
   },
   "overrides": {
     "cheerio@1.2.0": {
