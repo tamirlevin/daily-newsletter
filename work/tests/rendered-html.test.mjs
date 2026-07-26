@@ -22,18 +22,24 @@ test("statically renders the complete public Daily briefing", async () => {
   assert.match(html, /Published automatically/);
   assert.match(
     html,
-    /7(?:<!-- -->)?\/(?:<!-- -->)?7(?:<!-- -->)? healthy/,
+    /7(?:<!-- -->)?\/(?:<!-- -->)?7(?:<!-- -->)? sources healthy/,
   );
   assert.match(html, /href="#daily"/);
   assert.match(html, /href="#weekly"/);
   assert.match(html, /href="#history-daily"/);
   assert.match(html, /href="#system"/);
   assert.match(html, /How it works/);
-  assert.match(html, /og\.png/i);
+  assert.match(html, /og-compact\.png/i);
   assert.match(html, /summary_large_image/i);
-  assert.equal((html.match(/data-story-card="true"/g) ?? []).length, 5);
+  assert.equal((html.match(/class="story-row"/g) ?? []).length, 5);
+  assert.match(
+    html,
+    /Google Research examines how artificial intelligence/,
+  );
+  assert.doesNotMatch(html, /class="run-card"/);
+  assert.doesNotMatch(html, /class="brief-stats"/);
 
-  await access(new URL("../dist/client/og.png", import.meta.url));
+  await access(new URL("../dist/client/og-compact.png", import.meta.url));
   await access(new URL("../dist/server/index.js", import.meta.url));
   await access(new URL("../dist/.openai/hosting.json", import.meta.url));
 });
@@ -42,8 +48,8 @@ test("keeps editorial controls out of the public reader", async () => {
   const html = await renderedHtml();
 
   assert.doesNotMatch(html, /Editorial review required/i);
-  assert.doesNotMatch(html, /Approve/i);
-  assert.doesNotMatch(html, /Promote/i);
+  assert.doesNotMatch(html, />\s*Approve\s*</i);
+  assert.doesNotMatch(html, />\s*Promote\s*</i);
   assert.doesNotMatch(html, /role="progressbar"/i);
   assert.doesNotMatch(html, /codex-preview/i);
   assert.doesNotMatch(html, /javascript:/i);

@@ -4,6 +4,7 @@ import {
   normalizeCadence,
   runIdFor,
 } from "../lib/briefing-profiles.mjs";
+import { validateBriefSummary } from "../lib/brief-summary.mjs";
 
 export const RETAINED_RUNS_BY_CADENCE = Object.freeze(
   Object.fromEntries(
@@ -58,7 +59,7 @@ export function validatePublicationRun(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Run payload must be an object");
   }
-  if (payload.schemaVersion !== 2) {
+  if (payload.schemaVersion !== 3) {
     throw new Error("Unsupported run schema");
   }
   if (payload.kind !== "collection-draft") {
@@ -138,6 +139,20 @@ export function validatePublicationRun(payload) {
     itemUrls.add(url);
 
     validIsoDate(item.publishedAt, `items[${index}].publishedAt`);
+    validateBriefSummary(item.briefSummary, {
+      field: `items[${index}].briefSummary`,
+    });
+    if (item.summaryStatus !== "generated") {
+      throw new Error(
+        `items[${index}].summaryStatus must be generated`,
+      );
+    }
+    if (
+      "editorialText" in item ||
+      "summaryEvidenceText" in item
+    ) {
+      throw new Error(`items[${index}] exposes internal source text`);
+    }
     const lane = requiredText(
       item.editorialLane,
       `items[${index}].editorialLane`,

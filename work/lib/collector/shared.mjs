@@ -187,5 +187,6 @@ export function publicCandidate(candidate) {
   const safeCandidate = { ...candidate };
   delete safeCandidate.editorialText;
   delete safeCandidate.preliminaryTitle;
+  delete safeCandidate.summaryEvidenceText;
   return safeCandidate;
 }

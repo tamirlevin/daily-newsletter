@@ -61,15 +61,24 @@ Each cadence has its own GitHub Actions scheduler. Both:
 
 1. tests the collectors;
 2. collects and ranks the cadence-specific story count;
-3. checks the cadence-specific editorial mix;
-4. sends the run to the authenticated Sites endpoint; and
-5. keeps a diagnostic artifact for 14 days.
+3. generates a 35–75 word evidence-grounded summary for every selected story
+   with GitHub Models and the job's automatic `GITHUB_TOKEN`;
+4. checks the cadence-specific editorial mix and summary safety;
+5. sends the run to the authenticated Sites endpoint; and
+6. keeps a diagnostic artifact for 14 days.
 
 Sites rejects a run unless it has the required unique HTTPS links, sufficient
 healthy sources, the exact cadence mix, and no selected story flagged for
-missing evidence or promotional language. A stable run ID combines cadence and
-Melbourne issue date, so retrying the same issue cannot create another history
-entry.
+missing evidence or promotional language. It also rejects summaries that are
+missing, ungenerated, outside 35–75 words, marked up, or promotional. Before
+publication, the generator also rejects summaries that repeat a long source
+passage. A stable run ID combines cadence and Melbourne issue date, so retrying
+the same issue cannot create another history entry.
+
+GitHub-hosted runners provide the summary token automatically through
+`GITHUB_TOKEN` with `models: read`. No separate model API key or account setup
+is required. A local collection without that token is diagnostic only and
+cannot be published.
 
 Only after Sites accepts and stores a Daily run does the workflow request email
 delivery. Sites keeps the permanent delivery ledger and Resend receives the

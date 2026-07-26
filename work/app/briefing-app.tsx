@@ -13,6 +13,9 @@ export type CollectedStory = {
   url: string;
   publishedAt: string;
   editorialLane: EditorialLane;
+  briefSummary?: string;
+  summaryStatus?: "generated" | "not-generated";
+  readingTime?: string | null;
   originalDomain?: string;
   discoveredBy?: string[];
   sourceAttributions?: SourceAttribution[];
@@ -152,6 +155,7 @@ function sourceLabel(story: CollectedStory) {
 function storyMatches(story: CollectedStory, query: string) {
   return [
     story.title,
+    story.briefSummary,
     story.originalDomain,
     story.editorialLane,
     ...(story.discoveredBy ?? []),
@@ -190,55 +194,56 @@ function SourceLinks({ story }: { story: CollectedStory }) {
   );
 }
 
-function StoryCard({
+function fallbackSummary(story: CollectedStory) {
+  const reasons = story.selectionReasons
+    .filter((reason) => !reason.endsWith(" lane"))
+    .slice(0, 2)
+    .join(" and ");
+  return reasons
+    ? `This item was selected for ${reasons}. Open the linked source for the full published context.`
+    : "Open the linked source for the full published context.";
+}
+
+function StoryRow({
   story,
-  lead = false,
+  index,
 }: {
   story: CollectedStory;
-  lead?: boolean;
+  index: number;
 }) {
+  const meta = [
+    sourceLabel(story),
+    formatDate(story.publishedAt),
+    story.readingTime,
+  ].filter(Boolean);
+
   return (
     <article
-      className={`story-card ${lead ? "story-card--lead" : ""}`}
+      className="story-row"
       data-story-card="true"
       data-story-id={story.id}
     >
-      <div className="story-card__topline">
-        <span className={`source-tag source-tag--${story.editorialLane}`}>
-          <span aria-hidden="true" className="source-tag__mark">
-            {sourceLabel(story).slice(0, 2).toLocaleUpperCase()}
-          </span>
-          {sourceLabel(story)}
-        </span>
-        <span className="story-card__meta">
-          {formatDate(story.publishedAt)}
-        </span>
-      </div>
-
-      <div className="story-card__body">
-        <p className="story-card__category">
-          {laneDetails[story.editorialLane].short}
-        </p>
+      <span className="story-row__index" aria-hidden="true">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <div className="story-row__content">
+        <p className="story-row__meta">{meta.join(" · ")}</p>
         <h3>
           <a href={story.url} rel="noreferrer" target="_blank">
             {story.title}
           </a>
         </h3>
-        <p className="story-card__reason">
-          {story.selectionReasons
-            .filter((reason) => !reason.endsWith(" lane"))
-            .slice(0, 2)
-            .join(" · ")}
+        <p className="story-row__summary">
+          {story.briefSummary ?? fallbackSummary(story)}
         </p>
-      </div>
 
-      <SourceLinks story={story} />
-
-      <div className="story-card__footer">
-        <span>{story.originalDomain?.replace(/^www\./, "")}</span>
-        <a href={story.url} rel="noreferrer" target="_blank">
-          Read source <span aria-hidden="true">↗</span>
-        </a>
+        <div className="story-row__footer">
+          <span>{story.originalDomain?.replace(/^www\./, "")}</span>
+          <SourceLinks story={story} />
+          <a href={story.url} rel="noreferrer" target="_blank">
+            Open source <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
     </article>
   );
@@ -275,77 +280,32 @@ function CadenceView({ run }: { run: PublicationRun }) {
 
   return (
     <>
-      <section className="hero shell" aria-labelledby="brief-title">
-        <div className="hero-copy">
-          <div className="issue-line">
-            <span>Latest {run.cadence} briefing</span>
-            <span aria-hidden="true">/</span>
-            <span>{formatDate(run.issueDate)}</span>
-          </div>
-          <h1 id="brief-title">
-            The signal
-            <br />
-            <em>beneath the noise.</em>
-          </h1>
-          <p className="hero-summary">
-            {cadence.summary}
-          </p>
-          <div className="hero-status">
-            <span className="status-pill">Published automatically</span>
-            <span>{cadence.timing}</span>
-          </div>
+      <section className="issue-header shell" aria-labelledby="brief-title">
+        <div className="issue-line">
+          <span>{cadence.timing}</span>
+          <span aria-hidden="true">/</span>
+          <span>{formatDate(run.issueDate)}</span>
         </div>
-
-        <aside className="run-card" aria-label="Current run details">
-          <span className="kicker">Current run</span>
-          <strong>{formatDate(run.issueDate)}</strong>
-          <dl>
-            <div>
-              <dt>Stories</dt>
-              <dd>{run.items.length}</dd>
-            </div>
-            <div>
-              <dt>Source health</dt>
-              <dd>
-                {run.sourceHealth.healthySources}/
-                {run.sourceHealth.configuredSources} healthy
-              </dd>
-            </div>
-            <div>
-              <dt>Published</dt>
-              <dd>{formatTime(publicationTime)}</dd>
-            </div>
-          </dl>
+        <h1 id="brief-title">
+          The signal <em>beneath the noise.</em>
+        </h1>
+        <p className="issue-summary">{cadence.summary}</p>
+        <div className="issue-meta" aria-label="Current run details">
+          <span className="status-pill">Published automatically</span>
+          <span>{run.items.length} stories</span>
+          <span>
+            {run.editorialPolicy.selectedMix.executive} executive ·{" "}
+            {run.editorialPolicy.selectedMix.technical} technical ·{" "}
+            {run.editorialPolicy.selectedMix.research} research
+          </span>
+          <span>
+            {run.sourceHealth.healthySources}/
+            {run.sourceHealth.configuredSources} sources healthy
+          </span>
+          <span>Published {formatTime(publicationTime)}</span>
           <a href={`#history-${run.cadence}`} className="text-link">
-            View {run.cadence} history <span aria-hidden="true">→</span>
+            {cadence.label} history <span aria-hidden="true">→</span>
           </a>
-        </aside>
-      </section>
-
-      <section className="brief-stats" aria-label="Briefing mix">
-        <div className="shell brief-stats__inner">
-          <div>
-            <span className="stat-value">{run.items.length}</span>
-            <span className="stat-label">ranked stories</span>
-          </div>
-          <div>
-            <span className="stat-value">
-              {run.editorialPolicy.selectedMix.executive}
-            </span>
-            <span className="stat-label">executive</span>
-          </div>
-          <div>
-            <span className="stat-value">
-              {run.editorialPolicy.selectedMix.technical}
-            </span>
-            <span className="stat-label">technical</span>
-          </div>
-          <div>
-            <span className="stat-value">
-              {run.editorialPolicy.selectedMix.research}
-            </span>
-            <span className="stat-label">research</span>
-          </div>
         </div>
       </section>
 
@@ -356,8 +316,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
       >
         <div className="briefing-heading">
           <div>
-            <span className="kicker">{cadence.issueLabel}</span>
-            <h2 id="briefing-title">The briefing</h2>
+            <h2 id="briefing-title">{cadence.issueLabel}’s briefing</h2>
           </div>
           <p>
             Selected from diverse discovery sources, then linked back to the
@@ -423,7 +382,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
 
         {visibleGroups.length > 0 ? (
           <div className="sections">
-            {visibleGroups.map(({ lane, stories }, groupIndex) => (
+            {visibleGroups.map(({ lane, stories }) => (
               <section
                 className="brief-section"
                 aria-labelledby={`${lane}-title`}
@@ -432,21 +391,20 @@ function CadenceView({ run }: { run: PublicationRun }) {
                 <div className="section-heading">
                   <div>
                     <span className="section-index">
-                      {String(laneOrder.indexOf(lane) + 1).padStart(2, "0")}
+                      {String(laneOrder.indexOf(lane) + 1).padStart(2, "0")} /{" "}
+                      {String(laneOrder.length).padStart(2, "0")}
                     </span>
                     <h2 id={`${lane}-title`}>{laneDetails[lane].title}</h2>
                   </div>
                   <p>{laneDetails[lane].description}</p>
                 </div>
-                <div className="story-grid">
-                  {stories.map((story, storyIndex) => (
-                    <StoryCard
+                <div className="story-list">
+                  {stories.map((story) => (
+                    <StoryRow
                       story={story}
-                      lead={
-                        groupIndex === 0 &&
-                        storyIndex === 0 &&
-                        !isFiltered
-                      }
+                      index={run.items.findIndex(
+                        (item) => item.id === story.id,
+                      )}
                       key={story.id}
                     />
                   ))}
@@ -589,11 +547,12 @@ function SystemView() {
         <i aria-hidden="true">→</i>
         <article>
           <span>02</span>
-          <h2>Rank</h2>
+          <h2>Rank + summarise</h2>
           <p>
             Duplicates and promotional noise are reduced, then the strongest
             five Daily stories or ten Weekly stories are selected in their
-            cadence-specific editorial mix.
+            cadence-specific editorial mix and given concise, evidence-grounded
+            summaries.
           </p>
         </article>
         <i aria-hidden="true">→</i>

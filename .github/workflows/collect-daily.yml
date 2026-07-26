@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  models: read
 
 concurrency:
   group: collect-daily-briefing
@@ -48,8 +49,10 @@ jobs:
 
       - name: Collect and rank candidates
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '3' }}
-        run: npm run collect -- --cadence daily --lookback-days "$LOOKBACK_DAYS" --exclude-file data/recent/daily.json
+          REQUIRE_BRIEF_SUMMARIES: "true"
+        run: npm run collect -- --cadence daily --lookback-days "$LOOKBACK_DAYS" --exclude-file data/recent/daily.json --require-summaries
 
       - name: Add readable run summary
         run: npm run summarize:draft -- --cadence daily >> "$GITHUB_STEP_SUMMARY"
