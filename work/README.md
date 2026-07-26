@@ -14,6 +14,11 @@ system, and reader design. Their publication profiles are separate:
 - Weekly: ten stories in the existing 7 / 2 / 1 mix, with three successful
   runs retained.
 
+The reader uses a compact single-column layout with flat numbered rows and
+modest sans-serif headings. Daily is intended for immediate reading and has no
+search controls; Weekly and each cadence-specific History retain compact search
+tools for their larger collections.
+
 ## Run locally
 
 Requirements: Node.js 22.13 or newer.

@@ -13,17 +13,29 @@ async function clientBundle() {
   return readFile(new URL(`../dist/client${source}`, import.meta.url), "utf8");
 }
 
+async function serverRenderer() {
+  return import(
+    new URL(
+      `../dist-ssr/entry-server.js?test=${Date.now()}`,
+      import.meta.url,
+    ).href
+  );
+}
+
+async function seedRun(cadence) {
+  const name =
+    cadence === "daily" ? "seed-daily-run.json" : "seed-run.json";
+  return JSON.parse(
+    await readFile(new URL(`../data/${name}`, import.meta.url), "utf8"),
+  );
+}
+
 test("statically renders the complete public Daily briefing", async () => {
   const html = await renderedHtml();
 
   assert.match(html, /<title>AI Daily \+ Weekly Brief<\/title>/i);
-  assert.match(html, /The signal/);
-  assert.match(html, /beneath the noise\./);
+  assert.match(html, /Daily(?:<!-- -->)? briefing/i);
   assert.match(html, /Published automatically/);
-  assert.match(
-    html,
-    /7(?:<!-- -->)?\/(?:<!-- -->)?7(?:<!-- -->)? sources healthy/,
-  );
   assert.match(html, /href="#daily"/);
   assert.match(html, /href="#weekly"/);
   assert.match(html, /href="#history-daily"/);
@@ -58,13 +70,60 @@ test("keeps editorial controls out of the public reader", async () => {
 test("renders accessible reader controls", async () => {
   const html = await renderedHtml();
 
-  assert.match(html, /<label[^>]+for="brief-search"/i);
-  assert.match(html, /id="brief-search"[^>]+type="search"/i);
-  assert.match(html, /role="group"[^>]+aria-label="Filter by lane"/i);
-  assert.equal((html.match(/data-filter=/g) ?? []).length, 4);
-  assert.equal((html.match(/aria-pressed=/g) ?? []).length, 4);
+  assert.doesNotMatch(html, /id="brief-search-daily"/i);
+  assert.doesNotMatch(html, /data-filter=/i);
   assert.match(html, /class="skip-link" href="#view-content"/i);
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
+});
+
+test("keeps controls cadence-specific and gives each History a search", async () => {
+  const daily = await seedRun("daily");
+  const weekly = await seedRun("weekly");
+  const { renderWithRuns } = await serverRenderer();
+  const runs = { daily: [daily], weekly: [weekly] };
+
+  const dailyHtml = renderWithRuns(runs, "daily");
+  assert.doesNotMatch(dailyHtml, /type="search"/i);
+  assert.doesNotMatch(dailyHtml, /data-filter=/i);
+
+  const weeklyHtml = renderWithRuns(runs, "weekly");
+  assert.match(weeklyHtml, /id="brief-search-weekly"[^>]+type="search"/i);
+  assert.match(
+    weeklyHtml,
+    /role="group"[^>]+aria-label="Filter Weekly stories by category"/i,
+  );
+  assert.equal((weeklyHtml.match(/data-filter=/g) ?? []).length, 4);
+
+  const dailyHistoryHtml = renderWithRuns(runs, "history-daily");
+  assert.match(
+    dailyHistoryHtml,
+    /id="history-search-daily"[^>]+type="search"/i,
+  );
+  const weeklyHistoryHtml = renderWithRuns(runs, "history-weekly");
+  assert.match(
+    weeklyHistoryHtml,
+    /id="history-search-weekly"[^>]+type="search"/i,
+  );
+});
+
+test("renders a schema-version-2 run without generated summaries", async () => {
+  const daily = await seedRun("daily");
+  const weekly = await seedRun("weekly");
+  const legacy = structuredClone(daily);
+  legacy.schemaVersion = 2;
+  for (const story of legacy.items) {
+    delete story.briefSummary;
+    delete story.summaryStatus;
+  }
+
+  const { renderWithRuns } = await serverRenderer();
+  const html = renderWithRuns(
+    { daily: [legacy], weekly: [weekly] },
+    "daily",
+  );
+
+  assert.equal((html.match(/class="story-row"/g) ?? []).length, 5);
+  assert.match(html, /Open the linked source for the full published context/);
 });
 
 test("keeps separate Daily and Weekly reader histories", async () => {

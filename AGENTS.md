@@ -45,10 +45,12 @@ and **How it works** views.
 8. Do not add direct X ingestion or a dependency on the user's X account. A
    specific X link discovered through an existing public source may still be
    selected.
-9. Preserve the current editorial design language unless the user explicitly
-   requests a redesign. The How it works view should continue to explain
-   repository durability and session control, with links to the repository and
-   this boot file.
+9. Preserve the compact 75/25 editorial design unless the user explicitly
+   requests another redesign: flat numbered rows, thin rules, sans-serif
+   headings, no Daily discovery controls, and compact Weekly and History
+   search. The How it works view should continue to explain repository
+   durability and session control, with links to the repository and this boot
+   file.
 10. GitHub Pages is no longer the active deployment architecture. Do not
     restore a Pages deployment workflow unless the user changes that decision.
 11. Daily email has one configured recipient and no public registration flow.
@@ -256,14 +258,17 @@ Never put secret values in `.openai/hosting.json`; that manifest is committed.
 
 1. Behavior and structure live in `work/app/briefing-app.tsx`.
 2. Styling lives in `work/app/globals.css`.
-3. Keep Daily and Weekly focused on cards and outbound links; keep system
-   explanation under How it works.
+3. Keep Daily and Weekly in a compact single-column flow with flat numbered
+   rows and source-linked headlines; keep system explanation under How it
+   works.
 4. Update render/API tests for behavior changes.
 5. Keep the embedded seed valid so local and outage fallback rendering works.
-6. Keep the compact story-row treatment and factual summary visible in both
-   cadences, while allowing older stored runs without summaries to degrade
-   gracefully.
-7. Redeploy the existing Site after merging the change.
+6. Keep Daily free of search and filters. Weekly retains one compact search and
+   category-filter row; each cadence History retains its own search.
+7. Keep sans-serif headings modest in size so hierarchy does not create
+   unnecessary scrolling, while allowing older stored runs without summaries
+   to degrade gracefully.
+8. Redeploy the existing Site after merging the change.
 
 ### Change publication or storage
 

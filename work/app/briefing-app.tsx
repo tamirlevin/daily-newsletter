@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  discoveryLabel,
+  historyRunMatches,
+  issueStoryNumber,
+  publisherLabel,
+  storyMatches,
+  visibleHistoryStories,
+} from "./briefing-filters.mjs";
 
 export type EditorialLane = "executive" | "technical" | "research";
 
@@ -74,26 +82,15 @@ const cadenceDetails: Record<
   Cadence,
   {
     label: string;
-    issueLabel: string;
-    summary: string;
-    timing: string;
     retainedRuns: number;
   }
 > = {
   daily: {
     label: "Daily",
-    issueLabel: "Today",
-    summary:
-      "Five consequential AI developments, ranked for decisions first, technical usefulness second, and research direction third.",
-    timing: "Daily briefing · Melbourne",
     retainedRuns: 7,
   },
   weekly: {
     label: "Weekly",
-    issueLabel: "This week",
-    summary:
-      "Ten consequential AI developments, ranked for decisions first, technical usefulness second, and research direction third.",
-    timing: "Friday briefing · Melbourne",
     retainedRuns: 3,
   },
 };
@@ -136,64 +133,6 @@ function formatDate(value: string, options?: Intl.DateTimeFormatOptions) {
   }).format(date);
 }
 
-function formatTime(value: string) {
-  return formatDate(value, {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-function sourceLabel(story: CollectedStory) {
-  return (
-    story.discoveredBy?.[0] ??
-    story.originalDomain?.replace(/^www\./, "") ??
-    "Source"
-  );
-}
-
-function storyMatches(story: CollectedStory, query: string) {
-  return [
-    story.title,
-    story.briefSummary,
-    story.originalDomain,
-    story.editorialLane,
-    ...(story.discoveredBy ?? []),
-    ...story.selectionReasons,
-  ]
-    .join(" ")
-    .toLocaleLowerCase()
-    .includes(query);
-}
-
-function SourceLinks({ story }: { story: CollectedStory }) {
-  const links = (story.sourceAttributions ?? [])
-    .filter(
-      (source, index, all) =>
-        source.sourceUrl &&
-        all.findIndex((item) => item.sourceUrl === source.sourceUrl) === index,
-    )
-    .slice(0, 3);
-
-  if (links.length === 0) return null;
-
-  return (
-    <div className="source-links" aria-label="Discovery sources">
-      <span>Seen via</span>
-      {links.map((source) => (
-        <a
-          href={source.sourceUrl}
-          rel="noreferrer"
-          target="_blank"
-          key={source.sourceUrl}
-        >
-          {source.sourceName}
-        </a>
-      ))}
-    </div>
-  );
-}
-
 function fallbackSummary(story: CollectedStory) {
   const reasons = story.selectionReasons
     .filter((reason) => !reason.endsWith(" lane"))
@@ -211,23 +150,23 @@ function StoryRow({
   story: CollectedStory;
   index: number;
 }) {
+  const discovery = discoveryLabel(story);
   const meta = [
-    sourceLabel(story),
+    publisherLabel(story),
     formatDate(story.publishedAt),
-    story.readingTime,
+    story.originalDomain?.replace(/^www\./, ""),
+    discovery ? `found via ${discovery}` : "",
   ].filter(Boolean);
 
   return (
     <article
       className="story-row"
-      data-story-card="true"
       data-story-id={story.id}
     >
       <span className="story-row__index" aria-hidden="true">
         {String(index + 1).padStart(2, "0")}
       </span>
       <div className="story-row__content">
-        <p className="story-row__meta">{meta.join(" · ")}</p>
         <h3>
           <a href={story.url} rel="noreferrer" target="_blank">
             {story.title}
@@ -236,14 +175,7 @@ function StoryRow({
         <p className="story-row__summary">
           {story.briefSummary ?? fallbackSummary(story)}
         </p>
-
-        <div className="story-row__footer">
-          <span>{story.originalDomain?.replace(/^www\./, "")}</span>
-          <SourceLinks story={story} />
-          <a href={story.url} rel="noreferrer" target="_blank">
-            Open source <span aria-hidden="true">↗</span>
-          </a>
-        </div>
+        <p className="story-row__meta">{meta.join(" · ")}</p>
       </div>
     </article>
   );
@@ -275,38 +207,26 @@ function CadenceView({ run }: { run: PublicationRun }) {
     0,
   );
   const isFiltered = activeLane !== "all" || normalizedQuery.length > 0;
-  const publicationTime = run.publication?.publishedAt ?? run.generatedAt;
   const cadence = cadenceDetails[run.cadence];
+  const searchId = `brief-search-${run.cadence}`;
+  const showControls = run.cadence === "weekly";
 
   return (
     <>
       <section className="issue-header shell" aria-labelledby="brief-title">
-        <div className="issue-line">
-          <span>{cadence.timing}</span>
-          <span aria-hidden="true">/</span>
-          <span>{formatDate(run.issueDate)}</span>
+        <div className="issue-header__dateline">
+          <h1 id="brief-title">{cadence.label} briefing</h1>
+          <span aria-hidden="true">·</span>
+          <time dateTime={run.issueDate}>
+            {formatDate(run.issueDate, {
+              weekday: "long",
+              month: "long",
+            })}
+          </time>
         </div>
-        <h1 id="brief-title">
-          The signal <em>beneath the noise.</em>
-        </h1>
-        <p className="issue-summary">{cadence.summary}</p>
-        <div className="issue-meta" aria-label="Current run details">
-          <span className="status-pill">Published automatically</span>
-          <span>{run.items.length} stories</span>
-          <span>
-            {run.editorialPolicy.selectedMix.executive} executive ·{" "}
-            {run.editorialPolicy.selectedMix.technical} technical ·{" "}
-            {run.editorialPolicy.selectedMix.research} research
-          </span>
-          <span>
-            {run.sourceHealth.healthySources}/
-            {run.sourceHealth.configuredSources} sources healthy
-          </span>
-          <span>Published {formatTime(publicationTime)}</span>
-          <a href={`#history-${run.cadence}`} className="text-link">
-            {cadence.label} history <span aria-hidden="true">→</span>
-          </a>
-        </div>
+        <p className="issue-header__status">
+          {run.items.length} stories · Published automatically
+        </p>
       </section>
 
       <section
@@ -314,87 +234,85 @@ function CadenceView({ run }: { run: PublicationRun }) {
         className="briefing shell"
         aria-labelledby="briefing-title"
       >
-        <div className="briefing-heading">
-          <div>
-            <h2 id="briefing-title">{cadence.issueLabel}’s briefing</h2>
-          </div>
-          <p>
-            Selected from diverse discovery sources, then linked back to the
-            strongest available evidence.
-          </p>
-        </div>
+        <h2 id="briefing-title" className="sr-only">
+          {cadence.label} stories
+        </h2>
 
-        <div className="controls">
-          <label className="search-control" htmlFor="brief-search">
-            <span className="sr-only">Search stories</span>
-            <span aria-hidden="true" className="search-control__icon">
-              ⌕
-            </span>
-            <input
-              id="brief-search"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search the briefing"
-              autoComplete="off"
-            />
-            {query ? (
-              <button
-                type="button"
-                className="search-control__clear"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
+        {showControls ? (
+          <>
+            <div className="controls">
+              <label className="search-control" htmlFor={searchId}>
+                <span className="sr-only">Search this Weekly issue</span>
+                <span aria-hidden="true" className="search-control__icon">
+                  ⌕
+                </span>
+                <input
+                  id={searchId}
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search this issue"
+                  autoComplete="off"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    className="search-control__clear"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear Weekly search"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </label>
+
+              <div
+                className="filter-group"
+                role="group"
+                aria-label="Filter Weekly stories by category"
               >
-                Clear
-              </button>
-            ) : null}
-          </label>
-
-          <div className="filter-group" role="group" aria-label="Filter by lane">
-            <button
-              type="button"
-              data-filter="all"
-              aria-pressed={activeLane === "all"}
-              onClick={() => setActiveLane("all")}
-            >
-              All <span>{run.items.length}</span>
-            </button>
-            {laneOrder.map((lane) => (
-              <button
-                type="button"
-                data-filter={lane}
-                aria-pressed={activeLane === lane}
-                onClick={() => setActiveLane(lane)}
-                key={lane}
-              >
-                {laneDetails[lane].short}
-                <span>{run.editorialPolicy.selectedMix[lane]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <p className="results-summary" aria-live="polite">
-          {isFiltered
-            ? `${visibleCount} ${visibleCount === 1 ? "story" : "stories"} shown`
-            : `${run.items.length} briefing stories`}
-        </p>
+                <button
+                  type="button"
+                  data-filter="all"
+                  aria-pressed={activeLane === "all"}
+                  onClick={() => setActiveLane("all")}
+                >
+                  All
+                </button>
+                {laneOrder.map((lane) => (
+                  <button
+                    type="button"
+                    data-filter={lane}
+                    aria-pressed={activeLane === lane}
+                    onClick={() => setActiveLane(lane)}
+                    key={lane}
+                  >
+                    {laneDetails[lane].short}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="results-summary" aria-live="polite">
+              {isFiltered
+                ? `${visibleCount} ${visibleCount === 1 ? "story" : "stories"} shown`
+                : `${run.items.length} stories`}
+            </p>
+          </>
+        ) : null}
 
         {visibleGroups.length > 0 ? (
           <div className="sections">
             {visibleGroups.map(({ lane, stories }) => (
               <section
-                className="brief-section"
-                aria-labelledby={`${lane}-title`}
+                className={`brief-section brief-section--${lane}`}
+                aria-labelledby={`${run.cadence}-${lane}-title`}
                 key={lane}
               >
                 <div className="section-heading">
                   <div>
-                    <span className="section-index">
-                      {String(laneOrder.indexOf(lane) + 1).padStart(2, "0")} /{" "}
-                      {String(laneOrder.length).padStart(2, "0")}
-                    </span>
-                    <h2 id={`${lane}-title`}>{laneDetails[lane].title}</h2>
+                    <h2 id={`${run.cadence}-${lane}-title`}>
+                      {laneDetails[lane].title}
+                    </h2>
                   </div>
                   <p>{laneDetails[lane].description}</p>
                 </div>
@@ -402,9 +320,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
                   {stories.map((story) => (
                     <StoryRow
                       story={story}
-                      index={run.items.findIndex(
-                        (item) => item.id === story.id,
-                      )}
+                      index={issueStoryNumber(run.items, story) - 1}
                       key={story.id}
                     />
                   ))}
@@ -413,9 +329,9 @@ function CadenceView({ run }: { run: PublicationRun }) {
             ))}
           </div>
         ) : (
-          <div className="empty-state">
+          <div className="empty-state" aria-live="polite">
             <span className="kicker">No matches</span>
-            <h2>Nothing in this run matches that search.</h2>
+            <h2>Nothing in this Weekly issue matches that search.</h2>
             <button
               type="button"
               className="text-link text-link--button"
@@ -424,7 +340,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
                 setActiveLane("all");
               }}
             >
-              Clear filters
+              Clear search and filters
             </button>
           </div>
         )}
@@ -441,6 +357,24 @@ function HistoryView({
   runs: PublicationRun[];
 }) {
   const details = cadenceDetails[cadence];
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const filteredRuns = useMemo(
+    () =>
+      runs.filter((run) =>
+        historyRunMatches(
+          run,
+          normalizedQuery,
+          formatDate(run.issueDate, {
+            weekday: "long",
+            month: "long",
+          }),
+        ),
+      ),
+    [normalizedQuery, runs],
+  );
+  const searchId = `history-search-${cadence}`;
+
   return (
     <section className="subpage shell" aria-labelledby="history-title">
       <div className="subpage-hero">
@@ -468,52 +402,111 @@ function HistoryView({
         </div>
       </div>
 
-      {runs.length > 0 ? (
-        <div className="history-list">
-          {runs.map((run, index) => (
-            <details
-              className="history-run"
-              open={index === 0}
-              key={run.runId}
-            >
-              <summary>
-                <span className="history-run__index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="history-run__title">
-                  <strong>{formatDate(run.issueDate)}</strong>
-                  <small>
-                    {index === 0 ? "Current run" : "Previous run"} ·{" "}
-                    {run.items.length} stories
-                  </small>
-                </span>
-                <span className="history-run__mix">
-                  {run.editorialPolicy.selectedMix.executive}/
-                  {run.editorialPolicy.selectedMix.technical}/
-                  {run.editorialPolicy.selectedMix.research}
-                </span>
-              </summary>
+      <div className="history-controls">
+        <label className="history-search" htmlFor={searchId}>
+          <span>Search {details.label} History</span>
+          <input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Date, headline, publisher, or category"
+            autoComplete="off"
+          />
+        </label>
+        {query ? (
+          <button
+            type="button"
+            className="history-search__clear"
+            onClick={() => setQuery("")}
+          >
+            Clear search
+          </button>
+        ) : null}
+        <p aria-live="polite">
+          {filteredRuns.length}{" "}
+          {filteredRuns.length === 1 ? "issue" : "issues"}
+        </p>
+      </div>
 
-              <ol className="history-stories">
-                {run.items.map((story) => (
-                  <li key={story.id}>
-                    <span
-                      className={`lane-dot lane-dot--${story.editorialLane}`}
-                    />
-                    <a href={story.url} rel="noreferrer" target="_blank">
-                      {story.title}
-                    </a>
-                    <span>{sourceLabel(story)}</span>
-                  </li>
-                ))}
-              </ol>
-            </details>
-          ))}
+      {filteredRuns.length > 0 ? (
+        <div className="history-list">
+          {filteredRuns.map((run, index) => {
+            const formattedIssueDate = formatDate(run.issueDate, {
+              weekday: "long",
+              month: "long",
+            });
+            const visibleStories = visibleHistoryStories(
+              run,
+              normalizedQuery,
+              formattedIssueDate,
+            );
+
+            return (
+              <details
+                className="history-run"
+                open={normalizedQuery.length > 0 || index === 0}
+                key={run.runId}
+              >
+                <summary>
+                  <span className="history-run__index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="history-run__title">
+                    <strong>{formattedIssueDate}</strong>
+                    <small>
+                      {index === 0 && !normalizedQuery
+                        ? "Current run"
+                        : "Successful run"}{" "}
+                      · {run.items.length} stories
+                    </small>
+                  </span>
+                  <span className="history-run__mix">
+                    {run.editorialPolicy.selectedMix.executive}/
+                    {run.editorialPolicy.selectedMix.technical}/
+                    {run.editorialPolicy.selectedMix.research}
+                  </span>
+                </summary>
+
+                <ol className="history-stories">
+                  {visibleStories.map((story) => (
+                    <li key={story.id}>
+                      <span
+                        className={`lane-dot lane-dot--${story.editorialLane}`}
+                      />
+                      <a href={story.url} rel="noreferrer" target="_blank">
+                        {story.title}
+                      </a>
+                      <span>
+                        {publisherLabel(story)} ·{" "}
+                        {laneDetails[story.editorialLane].title}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            );
+          })}
         </div>
       ) : (
-        <div className="empty-state">
-          <span className="kicker">Awaiting first accepted run</span>
-          <h2>The {details.label} archive will appear here automatically.</h2>
+        <div className="empty-state" aria-live="polite">
+          <span className="kicker">
+            {runs.length === 0 ? "Awaiting first accepted run" : "No matches"}
+          </span>
+          <h2>
+            {runs.length === 0
+              ? `The ${details.label} archive will appear here automatically.`
+              : `Nothing in ${details.label} History matches that search.`}
+          </h2>
+          {runs.length > 0 ? (
+            <button
+              type="button"
+              className="text-link text-link--button"
+              onClick={() => setQuery("")}
+            >
+              Clear search
+            </button>
+          ) : null}
         </div>
       )}
     </section>
@@ -711,10 +704,12 @@ function AwaitingCadence({ cadence }: { cadence: Cadence }) {
 
 export function BriefingApp({
   seedRuns,
+  initialView = "daily",
 }: {
   seedRuns: RunsByCadence;
+  initialView?: ViewName;
 }) {
-  const [activeView, setActiveView] = useState<ViewName>("daily");
+  const [activeView, setActiveView] = useState<ViewName>(initialView);
   const [runsByCadence, setRunsByCadence] =
     useState<RunsByCadence>(seedRuns);
 
@@ -829,10 +824,6 @@ export function BriefingApp({
             ))}
           </nav>
 
-          <span className="public-badge">
-            <span aria-hidden="true" />
-            Public briefing
-          </span>
         </div>
       </header>
 
