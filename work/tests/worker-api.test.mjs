@@ -318,6 +318,10 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     const message = JSON.parse(init.body);
     assert.deepEqual(message.to, ["reader@example.com"]);
     assert.match(message.subject, /AI Daily Brief/);
+    assert.match(message.html, /Five AI developments worth your attention/);
+    assert.match(message.html, /Google Research examines how artificial intelligence/);
+    assert.doesNotMatch(message.html, />Read source/);
+    assert.match(message.text, /Google Research examines how artificial intelligence/);
     return new Response(JSON.stringify({ id: "email_123" }), {
       status: 200,
       headers: { "content-type": "application/json" },

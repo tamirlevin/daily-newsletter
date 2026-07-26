@@ -205,7 +205,7 @@ test("builds a publishable run and source-health report without source prose", a
   });
 
   assert.equal(draft.kind, "collection-draft");
-  assert.equal(draft.schemaVersion, 2);
+  assert.equal(draft.schemaVersion, 3);
   assert.equal(draft.cadence, "weekly");
   assert.equal(draft.runId, "weekly:2026-07-23");
   assert.equal(draft.editorialPolicy.profile, "weekly");

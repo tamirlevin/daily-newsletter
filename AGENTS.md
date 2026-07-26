@@ -61,6 +61,13 @@ and **How it works** views.
 13. Daily uses a three-day discovery window so the research slot remains viable
     on weekends. Before collection, the workflow loads retained Daily URLs from
     Sites and excludes them so the wider window does not repeat recent stories.
+14. Every published story includes an independently written 35–75 word
+    `briefSummary`. GitHub Actions generates and overlap-checks summaries with
+    GitHub Models using its automatic `GITHUB_TOKEN`; no additional model
+    account or repository secret is required. Sites rejects missing,
+    ungenerated, promotional, markup-bearing, or overlong summaries.
+    Summary-bearing publication payloads use schema version 3; stored version 2
+    runs remain readable as historical data.
 
 ## Architecture
 
@@ -69,6 +76,7 @@ GitHub Actions (.github/workflows/collect-daily.yml and collect.yml)
   -> Node collectors (work/lib/collector/)
   -> cadence profile (Daily 5 or Weekly 10)
   -> deduplicate, enrich, score, and select
+  -> GitHub Models evidence-grounded brief summaries
   -> timestamped draft + source-health diagnostic artifact
   -> work/scripts/publish-latest.mjs
   -> authenticated POST /api/ingest
@@ -111,6 +119,7 @@ source of truth.
 | Source parsers | `work/lib/collector/` |
 | Collection orchestration | `work/lib/collector/pipeline.mjs` |
 | Ranking and lane rules | `work/lib/collector/editorial.mjs` |
+| Summary generation and validation | `work/lib/brief-summary.mjs` |
 | Collector command | `work/scripts/collect.mjs` |
 | GitHub-to-Sites bridge | `work/scripts/publish-latest.mjs` |
 | Daily delivery request | `work/scripts/request-daily-email.mjs` |
@@ -173,7 +182,9 @@ npm run publish:latest -- --cadence weekly
 ```
 
 - `npm run collect` writes ignored files under cadence-specific draft and
-  source-health directories.
+  source-health directories. Scheduled workflows also generate the required
+  public summaries using the job's automatic GitHub token. A local collection
+  without that token remains diagnostic and cannot pass publication.
 - `npm run publish:latest` writes to the configured Site. It requires
   `SITES_INGEST_URL` and `SITES_INGEST_TOKEN`; do not run it against production
   without authorization.
@@ -186,7 +197,9 @@ npm run publish:latest -- --cadence weekly
 
 The Daily workflow runs at `0 22 * * *`; Weekly runs at `0 22 * * 4`.
 Both are 08:00 AEST / 09:00 AEDT in Melbourne and support manual
-`workflow_dispatch`.
+`workflow_dispatch`. Both grant the job-scoped `GITHUB_TOKEN` read-only access
+to GitHub Models for summary generation; this does not require a user-managed
+secret.
 
 Repository Actions secrets:
 
@@ -247,7 +260,10 @@ Never put secret values in `.openai/hosting.json`; that manifest is committed.
    explanation under How it works.
 4. Update render/API tests for behavior changes.
 5. Keep the embedded seed valid so local and outage fallback rendering works.
-6. Redeploy the existing Site after merging the change.
+6. Keep the compact story-row treatment and factual summary visible in both
+   cadences, while allowing older stored runs without summaries to degrade
+   gracefully.
+7. Redeploy the existing Site after merging the change.
 
 ### Change publication or storage
 

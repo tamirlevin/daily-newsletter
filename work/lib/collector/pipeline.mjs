@@ -27,6 +27,7 @@ import {
   normalizeCadence,
   runIdFor,
 } from "../briefing-profiles.mjs";
+import { load } from "cheerio";
 
 function failedHealth(source, error) {
   return {
@@ -139,6 +140,58 @@ async function enrichCandidate(
   return enriched;
 }
 
+function evidenceTextFromHtml(html) {
+  const $ = load(html);
+  const candidates = [
+    $('meta[name="citation_abstract"]').attr("content"),
+    $('meta[property="og:description"]').attr("content"),
+    $('meta[name="description"]').attr("content"),
+    $('meta[name="twitter:description"]').attr("content"),
+  ];
+
+  $("script[type='application/ld+json']").each((_, element) => {
+    try {
+      const parsed = JSON.parse($(element).text());
+      const entries = Array.isArray(parsed) ? parsed : [parsed];
+      for (const entry of entries) {
+        if (typeof entry?.description === "string") {
+          candidates.push(entry.description);
+        }
+      }
+    } catch {
+      // Invalid publisher JSON-LD is ignored in favour of other evidence.
+    }
+  });
+
+  const paragraphs = $("article p, main p")
+    .map((_, element) => $(element).text())
+    .get()
+    .map((value) => String(value).replace(/\s+/g, " ").trim())
+    .filter((value) => value.split(" ").length >= 12)
+    .slice(0, 3);
+  candidates.push(...paragraphs);
+
+  return [...new Set(
+    candidates
+      .map((value) => String(value ?? "").replace(/\s+/g, " ").trim())
+      .filter((value) => value.split(" ").length >= 12),
+  )]
+    .join(" ")
+    .slice(0, 5_000);
+}
+
+async function addSummaryEvidence(candidate, fetchText) {
+  try {
+    const response = await fetchText(candidate.url);
+    const evidenceText = evidenceTextFromHtml(response.text);
+    return evidenceText
+      ? { ...candidate, summaryEvidenceText: evidenceText }
+      : candidate;
+  } catch {
+    return candidate;
+  }
+}
+
 function validatePolicy(config) {
   const ratioTotal = Object.values(config.editorialMix).reduce(
     (total, value) => total + value,
@@ -177,6 +230,7 @@ export async function collectBrief({
   maxItems,
   excludedUrls = [],
   fetchText = defaultFetchText,
+  summarizeCandidates,
 }) {
   const normalizedCadence = normalizeCadence(cadence);
   const cadenceProfile = config.cadences?.[normalizedCadence];
@@ -271,8 +325,28 @@ export async function collectBrief({
     editorialMix,
     config.selectionRules,
   );
+  let selectedWithSummaries = selected;
+  if (summarizeCandidates) {
+    const withEvidence = await mapWithConcurrency(
+      selected,
+      config.requestConcurrency,
+      (candidate) => addSummaryEvidence(candidate, fetchText),
+    );
+    const summaries = await summarizeCandidates(withEvidence);
+    if (
+      !Array.isArray(summaries) ||
+      summaries.length !== withEvidence.length
+    ) {
+      throw new Error("Summary generation returned the wrong story count");
+    }
+    selectedWithSummaries = withEvidence.map((candidate, index) => ({
+      ...candidate,
+      briefSummary: summaries[index],
+      summaryStatus: "generated",
+    }));
+  }
   for (const sourceHealth of health) {
-    sourceHealth.selectedCandidates = selected.filter((candidate) =>
+    sourceHealth.selectedCandidates = selectedWithSummaries.filter((candidate) =>
       candidate.sourceAttributions.some(
         ({ sourceId }) => sourceId === sourceHealth.id,
       ),
@@ -312,26 +386,27 @@ export async function collectBrief({
       preliminaryCandidates: preliminary.length,
       enrichmentPoolCandidates: enrichmentPool.length,
       postEnrichmentCandidates: rescored.length,
-      selectedCandidates: selected.length,
-      selectedWithPrimaryEvidence: selected.filter(
+      selectedCandidates: selectedWithSummaries.length,
+      selectedWithPrimaryEvidence: selectedWithSummaries.filter(
         (candidate) =>
           (candidate.sourceSignals?.evidenceAuthority ?? 0) >= 0.9,
       ).length,
-      selectedAcrossMultipleDiscoveryChannels: selected.filter(
+      selectedAcrossMultipleDiscoveryChannels: selectedWithSummaries.filter(
         (candidate) =>
           (candidate.sourceSignals?.discoverySourceCount ?? 0) > 1,
       ).length,
-      selectedNeedingPrimaryEvidenceReview: selected.filter(
+      selectedNeedingPrimaryEvidenceReview: selectedWithSummaries.filter(
         (candidate) => candidate.flags?.needsPrimaryEvidenceReview,
       ).length,
       directXLinksInRawCandidates:
         eligibleCandidates.filter(isDirectXLink).length,
-      directXLinksInSelection: selected.filter(isDirectXLink).length,
+      directXLinksInSelection:
+        selectedWithSummaries.filter(isDirectXLink).length,
     },
   };
 
   const draft = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     kind: "collection-draft",
     cadence: normalizedCadence,
     runId,
@@ -342,7 +417,7 @@ export async function collectBrief({
     editorialPolicy: {
       profile: normalizedCadence,
       targetMix: editorialMix,
-      selectedMix: countEditorialMix(selected),
+      selectedMix: countEditorialMix(selectedWithSummaries),
       sourceSignals: config.sourceSignals,
       selectionRules: config.selectionRules,
       note:
@@ -360,7 +435,7 @@ export async function collectBrief({
         .length,
       configuredSources: health.length,
     },
-    items: selected.map(publicCandidate),
+    items: selectedWithSummaries.map(publicCandidate),
   };
 
   return { draft, healthReport };

@@ -120,6 +120,30 @@ test("rejects duplicate links and evidence-review flags", async () => {
   );
 });
 
+test("rejects missing, unsafe, or ungenerated public summaries", async () => {
+  const missing = await seedRun("daily");
+  delete missing.items[0].briefSummary;
+  assert.throws(
+    () => validatePublicationRun(missing),
+    /briefSummary must be a non-empty string/,
+  );
+
+  const markup = await seedRun("daily");
+  markup.items[0].briefSummary =
+    "This summary contains an unsafe <strong>markup fragment</strong> while continuing with enough neutral explanatory words to fall inside the accepted publication length. It should still be rejected because reader and email summaries are plain text only.";
+  assert.throws(
+    () => validatePublicationRun(markup),
+    /plain text/,
+  );
+
+  const status = await seedRun("daily");
+  status.items[0].summaryStatus = "not-generated";
+  assert.throws(
+    () => validatePublicationRun(status),
+    /summaryStatus must be generated/,
+  );
+});
+
 test("rejects a run when too few sources are healthy", async () => {
   const run = await seedRun("weekly");
   run.sourceHealth.healthySources = 3;

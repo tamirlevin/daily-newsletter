@@ -13,6 +13,8 @@ const COLOURS = Object.freeze({
   accent: "#c95d3f",
 });
 
+const LANE_ORDER = ["executive", "technical", "research"];
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -34,13 +36,6 @@ function formatIssueDate(value) {
   }).format(date);
 }
 
-function storyReason(story) {
-  return (story.selectionReasons ?? [])
-    .filter((reason) => !String(reason).endsWith(" lane"))
-    .slice(0, 2)
-    .join(" · ");
-}
-
 function storySource(story) {
   return (
     story.discoveredBy?.[0] ??
@@ -49,29 +44,47 @@ function storySource(story) {
   );
 }
 
-function storyHtml(story, index) {
+function storyDomain(story) {
+  return story.originalDomain?.replace(/^www\./, "") ?? storySource(story);
+}
+
+function storyDiscovery(story) {
+  const sources = [...new Set(story.discoveredBy ?? [])].slice(0, 3);
+  return sources.length > 0 ? `Discovered via ${sources.join(" + ")}` : "";
+}
+
+function storyDate(story) {
+  const date = new Date(story.publishedAt);
+  if (Number.isNaN(date.valueOf())) return "";
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
+function storyHtml(story, index, isLast) {
+  const meta = [
+    String(index + 1).padStart(2, "0"),
+    storyDate(story),
+    story.readingTime,
+  ].filter(Boolean);
   return `
     <tr>
-      <td style="padding:0 0 16px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOURS.card};border:1px solid ${COLOURS.rule};border-radius:14px">
-          <tr>
-            <td style="padding:22px 24px">
-              <p style="margin:0 0 9px;font:700 11px/1.4 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:${COLOURS.accent}">
-                ${String(index + 1).padStart(2, "0")} · ${escapeHtml(LANE_LABELS[story.editorialLane] ?? story.editorialLane)}
-              </p>
-              <h2 style="margin:0 0 12px;font:700 23px/1.18 Georgia,serif;color:${COLOURS.ink}">
-                <a href="${escapeHtml(story.url)}" style="color:${COLOURS.ink};text-decoration:none">${escapeHtml(story.title)}</a>
-              </h2>
-              <p style="margin:0 0 14px;font:400 14px/1.55 Arial,sans-serif;color:${COLOURS.muted}">
-                ${escapeHtml(storyReason(story))}
-              </p>
-              <p style="margin:0;font:600 12px/1.4 Arial,sans-serif;color:${COLOURS.ink}">
-                ${escapeHtml(storySource(story))} &nbsp;·&nbsp;
-                <a href="${escapeHtml(story.url)}" style="color:${COLOURS.accent}">Read source →</a>
-              </p>
-            </td>
-          </tr>
-        </table>
+      <td style="padding:17px 0 ${isLast ? "5px" : "18px"};border-bottom:${isLast ? "0" : `1px solid ${COLOURS.rule}`}">
+        <p style="margin:0 0 6px;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:${COLOURS.muted}">
+          ${escapeHtml(meta.join(" · "))}
+        </p>
+        <h3 style="margin:0 0 8px;font:700 21px/1.22 Georgia,serif;color:${COLOURS.ink}">
+          <a href="${escapeHtml(story.url)}" style="color:${COLOURS.ink};text-decoration:underline;text-decoration-color:${COLOURS.accent};text-decoration-thickness:1px;text-underline-offset:3px">${escapeHtml(story.title)}</a>
+        </h3>
+        <p style="margin:0 0 9px;font:400 15px/1.52 Arial,sans-serif;color:${COLOURS.ink}">
+          ${escapeHtml(story.briefSummary)}
+        </p>
+        <p style="margin:0;font:600 10px/1.45 Arial,sans-serif;letter-spacing:.04em;color:${COLOURS.muted}">
+          ${escapeHtml(storyDomain(story))}
+          ${storyDiscovery(story) ? ` &nbsp;·&nbsp; ${escapeHtml(storyDiscovery(story))}` : ""}
+        </p>
       </td>
     </tr>`;
 }
@@ -81,6 +94,13 @@ export function renderDailyEmail(run, publicBaseUrl) {
   const readerUrl = new URL("/#daily", publicBaseUrl).toString();
   const subject = `AI Daily Brief — ${issueLabel}`;
   const stories = run.items ?? [];
+  const sections = LANE_ORDER
+    .map((lane) => ({
+      lane,
+      stories: stories.filter((story) => story.editorialLane === lane),
+    }))
+    .filter((section) => section.stories.length > 0);
+  let storyIndex = 0;
   const html = `<!doctype html>
 <html lang="en">
   <body style="margin:0;padding:0;background:${COLOURS.paper}">
@@ -89,31 +109,63 @@ export function renderDailyEmail(run, publicBaseUrl) {
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOURS.paper}">
       <tr>
-        <td align="center" style="padding:28px 14px">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px">
+        <td align="center" style="padding:22px 12px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:${COLOURS.card};border:1px solid ${COLOURS.rule}">
             <tr>
-              <td style="padding:0 4px 24px">
-                <p style="margin:0 0 10px;font:700 12px/1.4 Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:${COLOURS.accent}">
-                  AI Daily Brief · Melbourne
-                </p>
-                <h1 style="margin:0 0 12px;font:700 38px/1.05 Georgia,serif;color:${COLOURS.ink}">
-                  The signal beneath the noise.
-                </h1>
-                <p style="margin:0;font:400 16px/1.55 Arial,sans-serif;color:${COLOURS.muted}">
-                  ${escapeHtml(issueLabel)} · Five developments ranked for decisions, builders, and research direction.
-                </p>
+              <td style="padding:24px 28px 18px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="font:700 12px/1.4 Arial,sans-serif;color:${COLOURS.ink}">
+                      AI Daily + Weekly Brief
+                    </td>
+                    <td align="right" style="font:600 11px/1.4 Arial,sans-serif">
+                      <a href="${escapeHtml(readerUrl)}" style="color:${COLOURS.muted};text-decoration:underline">View in reader</a>
+                    </td>
+                  </tr>
+                </table>
+                <div style="margin-top:14px;padding-top:16px;border-top:1px solid ${COLOURS.rule}">
+                  <p style="margin:0 0 6px;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:${COLOURS.accent}">
+                    Daily brief · Melbourne
+                  </p>
+                  <h1 style="margin:0 0 7px;font:700 29px/1.08 Georgia,serif;color:${COLOURS.ink}">
+                    Five AI developments worth your attention
+                  </h1>
+                  <p style="margin:0;font:400 14px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
+                    ${escapeHtml(issueLabel)} · Ranked for decisions, builders, and research direction.
+                  </p>
+                </div>
               </td>
             </tr>
-            ${stories.map(storyHtml).join("")}
+            ${sections.map((section) => `
+              <tr>
+                <td style="padding:0 28px 17px">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:10px 0 0;border-top:2px solid ${COLOURS.ink}">
+                        <p style="margin:0;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:${COLOURS.accent}">
+                          ${escapeHtml(LANE_LABELS[section.lane])}
+                          <span style="color:${COLOURS.muted}">&nbsp;&nbsp;${section.stories.length} ${section.stories.length === 1 ? "story" : "stories"}</span>
+                        </p>
+                      </td>
+                    </tr>
+                    ${section.stories.map((story, index) =>
+                      storyHtml(
+                        story,
+                        storyIndex++,
+                        index === section.stories.length - 1,
+                      )).join("")}
+                  </table>
+                </td>
+              </tr>`).join("")}
             <tr>
-              <td align="center" style="padding:10px 4px 22px">
-                <a href="${escapeHtml(readerUrl)}" style="display:inline-block;padding:13px 20px;border-radius:999px;background:${COLOURS.ink};color:#ffffff;font:700 14px/1 Arial,sans-serif;text-decoration:none">
-                  Open the Daily reader
+              <td align="center" style="padding:4px 28px 24px">
+                <a href="${escapeHtml(readerUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:${COLOURS.ink};color:#ffffff;font:700 13px/1 Arial,sans-serif;text-decoration:none">
+                  Open the full Daily reader →
                 </a>
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 4px;border-top:1px solid ${COLOURS.rule};font:400 12px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
+              <td style="padding:15px 28px;border-top:1px solid ${COLOURS.rule};font:400 11px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
                 Sent automatically only after Sites accepted this Daily run.
               </td>
             </tr>
@@ -132,7 +184,7 @@ export function renderDailyEmail(run, publicBaseUrl) {
     ...stories.flatMap((story, index) => [
       `${index + 1}. ${story.title}`,
       `${LANE_LABELS[story.editorialLane] ?? story.editorialLane} · ${storySource(story)}`,
-      storyReason(story),
+      story.briefSummary,
       story.url,
       "",
     ]),

@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { collectBrief } from "../lib/collector/pipeline.mjs";
 import { normalizeCadence } from "../lib/briefing-profiles.mjs";
+import { generateBriefSummaries } from "../lib/brief-summary.mjs";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -76,6 +77,17 @@ async function main() {
         ),
       )
     : [];
+  const requireSummaries =
+    options.requireSummaries === true ||
+    options.requireSummaries === "true" ||
+    process.env.REQUIRE_BRIEF_SUMMARIES === "true";
+  const githubToken = process.env.GITHUB_TOKEN?.trim();
+
+  if (requireSummaries && !githubToken) {
+    throw new Error(
+      "GITHUB_TOKEN is required when brief summaries are required",
+    );
+  }
 
   if (!Number.isFinite(lookbackDays) || lookbackDays <= 0) {
     throw new Error("--lookback-days must be a positive number");
@@ -97,7 +109,20 @@ async function main() {
     lookbackDays,
     maxItems,
     excludedUrls,
+    summarizeCandidates: githubToken
+      ? (candidates) =>
+          generateBriefSummaries(candidates, { token: githubToken })
+      : undefined,
   });
+  if (
+    requireSummaries &&
+    draft.items.some(
+      (item) =>
+        item.summaryStatus !== "generated" || !item.briefSummary,
+    )
+  ) {
+    throw new Error("Every selected story needs a generated brief summary");
+  }
   const stamp = outputStamp(asOf);
   const draftPath = path.resolve(
     projectRoot,
