@@ -1,7 +1,7 @@
 # 75/25 reader redesign QA criteria
 
-Status: approved for local mockup review only. This document also defines the
-later implementation and release gates; it does not approve either stage.
+Status: approved for local implementation. Release remains a separate,
+unapproved gate.
 
 ## How to use this matrix
 
@@ -39,7 +39,7 @@ treated as production-ready.
 | M08 | Daily controls | No search field, category filters, result count, or empty-search state appears in Daily. | Automated |
 | M09 | Weekly controls | Weekly has one compact search-and-filter row below the dateline, with All, Executive, Technical, and Research choices. | Both |
 | M10 | Story flow | Stories are flat rows separated by thin rules: no cards, rounded story containers, shadows, or category sidebar. | Both |
-| M11 | Story hierarchy | Headlines are approximately 20–22px desktop, summaries 14.5–15px at about 1.5 line height, and metadata 11–12px. Headline and global terracotta number are visibly stronger than summary and metadata. | Visual/manual |
+| M11 | Story hierarchy | Headlines use the body sans-serif family at approximately 17–18px desktop and 16–17px mobile, summaries are 14.5–15px at about 1.5 line height, and metadata is 11–12px. Headline and global terracotta number remain visibly stronger than summary and metadata. | Visual/manual |
 | M12 | Story content | Every story shows a directly linked headline, a 35–75 word factual summary, and publisher/date/domain/discovery metadata. Category is not repeated inside story metadata. | Both |
 | M13 | Numbering | Story numbers are global and stable across the issue (`01`–`05` Daily, `01`–`10` Weekly), not restarted by section. | Automated |
 | M14 | Sections | Executive Signal uses terracotta, For Builders deep ink, and Research Watch jade. Each has a compact uppercase label, one thin rule, and a quiet short explanation. | Visual/manual |

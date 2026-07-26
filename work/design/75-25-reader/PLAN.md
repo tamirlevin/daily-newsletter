@@ -1,15 +1,16 @@
 # 75/25 reader redesign plan
 
-Status: approved for mockup and QA-definition work only.
+Status: approved for local implementation; release remains unapproved.
 
-This document is the durable design brief for a proposed reader refinement.
+This document is the durable design brief for the reader refinement.
 It combines approximately 75% of the compact, newspaper-like restraint shown
 in the Claude one-shot with 25% of the live product's stronger hierarchy,
 global story numbering, brand signal, and interaction polish.
 
-No production application, collection, publication, storage, email, scheduler,
-or deployment change is approved by this plan. The next approval gate is the
-review of local mockups and QA criteria.
+The local reader and compact email presentation are approved for
+implementation. Collection, publication, storage, recipient, scheduler, GitHub
+release, and deployment changes remain outside this approval. The next approval
+gate is review of the finished local application.
 
 ## Product outcome
 
@@ -146,13 +147,13 @@ Headline linked directly to the original source
 Publisher · 26 Jul 2026 · domain · found via discovery source
 ```
 
-Typography targets:
+Typography targets, updated after mockup review:
 
-- headline: approximately 20–22px on desktop and 19–21px on mobile;
+- headline: approximately 17–18px on desktop and 16–17px on mobile;
 - summary: approximately 14.5–15px with a 1.5 line height;
 - metadata: approximately 11–12px;
+- headings use the same sans-serif family as body copy;
 - headline and number must remain visually stronger than metadata;
-- serif headlines, sans-serif summaries and metadata;
 - visible but restrained link underline;
 - terracotta global story number.
 

@@ -321,6 +321,8 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     assert.match(message.html, /Five AI developments worth your attention/);
     assert.match(message.html, /Google Research examines how artificial intelligence/);
     assert.doesNotMatch(message.html, />Read source/);
+    assert.doesNotMatch(message.html, /Georgia,serif/);
+    assert.match(message.html, /font:700 17px\/1\.3 Arial,sans-serif/);
     assert.match(message.text, /Google Research examines how artificial intelligence/);
     return new Response(JSON.stringify({ id: "email_123" }), {
       status: 200,

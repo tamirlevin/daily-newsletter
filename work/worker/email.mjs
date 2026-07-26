@@ -71,14 +71,14 @@ function storyHtml(story, index, isLast) {
   ].filter(Boolean);
   return `
     <tr>
-      <td style="padding:17px 0 ${isLast ? "5px" : "18px"};border-bottom:${isLast ? "0" : `1px solid ${COLOURS.rule}`}">
+      <td style="padding:14px 0 ${isLast ? "4px" : "15px"};border-bottom:${isLast ? "0" : `1px solid ${COLOURS.rule}`}">
         <p style="margin:0 0 6px;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:${COLOURS.muted}">
           ${escapeHtml(meta.join(" · "))}
         </p>
-        <h3 style="margin:0 0 8px;font:700 21px/1.22 Georgia,serif;color:${COLOURS.ink}">
+        <h3 style="margin:0 0 7px;font:700 17px/1.3 Arial,sans-serif;color:${COLOURS.ink}">
           <a href="${escapeHtml(story.url)}" style="color:${COLOURS.ink};text-decoration:underline;text-decoration-color:${COLOURS.accent};text-decoration-thickness:1px;text-underline-offset:3px">${escapeHtml(story.title)}</a>
         </h3>
-        <p style="margin:0 0 9px;font:400 15px/1.52 Arial,sans-serif;color:${COLOURS.ink}">
+        <p style="margin:0 0 8px;font:400 14px/1.5 Arial,sans-serif;color:${COLOURS.ink}">
           ${escapeHtml(story.briefSummary)}
         </p>
         <p style="margin:0;font:600 10px/1.45 Arial,sans-serif;letter-spacing:.04em;color:${COLOURS.muted}">
@@ -109,10 +109,10 @@ export function renderDailyEmail(run, publicBaseUrl) {
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOURS.paper}">
       <tr>
-        <td align="center" style="padding:22px 12px">
+        <td align="center" style="padding:16px 10px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:${COLOURS.card};border:1px solid ${COLOURS.rule}">
             <tr>
-              <td style="padding:24px 28px 18px">
+              <td style="padding:18px 22px 14px">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="font:700 12px/1.4 Arial,sans-serif;color:${COLOURS.ink}">
@@ -123,14 +123,14 @@ export function renderDailyEmail(run, publicBaseUrl) {
                     </td>
                   </tr>
                 </table>
-                <div style="margin-top:14px;padding-top:16px;border-top:1px solid ${COLOURS.rule}">
+                <div style="margin-top:11px;padding-top:13px;border-top:1px solid ${COLOURS.rule}">
                   <p style="margin:0 0 6px;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:${COLOURS.accent}">
                     Daily brief · Melbourne
                   </p>
-                  <h1 style="margin:0 0 7px;font:700 29px/1.08 Georgia,serif;color:${COLOURS.ink}">
+                  <h1 style="margin:0 0 6px;font:700 21px/1.25 Arial,sans-serif;color:${COLOURS.ink}">
                     Five AI developments worth your attention
                   </h1>
-                  <p style="margin:0;font:400 14px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
+                  <p style="margin:0;font:400 13px/1.45 Arial,sans-serif;color:${COLOURS.muted}">
                     ${escapeHtml(issueLabel)} · Ranked for decisions, builders, and research direction.
                   </p>
                 </div>
@@ -138,7 +138,7 @@ export function renderDailyEmail(run, publicBaseUrl) {
             </tr>
             ${sections.map((section) => `
               <tr>
-                <td style="padding:0 28px 17px">
+                <td style="padding:0 22px 13px">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td style="padding:10px 0 0;border-top:2px solid ${COLOURS.ink}">
@@ -158,14 +158,14 @@ export function renderDailyEmail(run, publicBaseUrl) {
                 </td>
               </tr>`).join("")}
             <tr>
-              <td align="center" style="padding:4px 28px 24px">
+              <td align="center" style="padding:3px 22px 18px">
                 <a href="${escapeHtml(readerUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:${COLOURS.ink};color:#ffffff;font:700 13px/1 Arial,sans-serif;text-decoration:none">
                   Open the full Daily reader →
                 </a>
               </td>
             </tr>
             <tr>
-              <td style="padding:15px 28px;border-top:1px solid ${COLOURS.rule};font:400 11px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
+              <td style="padding:12px 22px;border-top:1px solid ${COLOURS.rule};font:400 11px/1.5 Arial,sans-serif;color:${COLOURS.muted}">
                 Sent automatically only after Sites accepted this Daily run.
               </td>
             </tr>

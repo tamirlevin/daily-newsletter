@@ -18,7 +18,7 @@
     "test": "npm run test:collectors && npm run test:publication && npm run build && npm run test:render",
     "test:collectors": "node --test tests/collectors/*.test.mjs",
     "test:publication": "node --test tests/publication.test.mjs",
-    "test:render": "node --test tests/rendered-html.test.mjs tests/worker-api.test.mjs",
+    "test:render": "node --test tests/reader-state.test.mjs tests/rendered-html.test.mjs tests/worker-api.test.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
