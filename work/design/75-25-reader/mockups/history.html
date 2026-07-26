@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A compact Daily History mockup for AI Daily + Weekly Brief."
+    />
+    <title>Daily History · AI Daily + Weekly Brief</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="mockup.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to history</a>
+    <header class="masthead">
+      <div class="masthead__inner">
+        <a class="brand" href="index.html" aria-label="AI Daily and Weekly Brief mockups">
+          <span class="brand-signal" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span>AI Daily + Weekly Brief</span>
+        </a>
+        <nav class="primary-nav" aria-label="Briefing">
+          <a href="daily.html">Daily</a>
+          <a href="weekly.html">Weekly</a>
+          <a href="history.html" aria-current="page">History</a>
+          <a href="daily.html#method">How it works</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="issue history" id="main">
+      <header class="issue-header">
+        <p class="issue-header__dateline"><span>Daily History</span></p>
+        <p class="issue-header__status">
+          Three example Daily briefings from the seven retained runs
+        </p>
+      </header>
+
+      <nav class="cadence-switch" aria-label="History cadence">
+        <a href="history.html" aria-current="page">Daily</a>
+        <span
+          aria-disabled="true"
+          title="Only the Daily cadence is included in this mockup set"
+        >
+          Weekly
+        </span>
+      </nav>
+
+      <form class="history-search" data-history-controls role="search">
+        <label for="history-query">Search Daily History</label>
+        <div class="search-field">
+          <svg aria-hidden="true" viewBox="0 0 20 20">
+            <circle cx="8.6" cy="8.6" r="5.4"></circle>
+            <path d="m12.7 12.7 4 4"></path>
+          </svg>
+          <input
+            id="history-query"
+            type="search"
+            placeholder="Date, headline, publisher, or category"
+            autocomplete="off"
+            data-history-search
+          />
+        </div>
+        <p class="result-count" aria-live="polite" data-history-result-count>3 issues</p>
+      </form>
+
+      <div class="history-list" data-history-list>
+        <details
+          class="history-issue"
+          open
+          data-history-issue
+          data-search-text="25 July 2026 Understanding the AI economy Google Research executive AMD Anthropic Wall Street Journal OpenAI Presence OpenAI Cerebras builders Color Pass-Through arXiv research"
+        >
+          <summary>
+            <span>
+              <strong>Saturday 25 July 2026</strong>
+              <small>5 stories · Published automatically</small>
+            </span>
+            <span class="history-issue__action">View issue</span>
+          </summary>
+          <ol class="history-stories">
+            <li>
+              <a href="https://blog.google/innovation-and-ai/technology/research/understanding-the-ai-economy">Understanding the AI economy</a>
+              <span>Google Research · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://www.wsj.com/tech/ai/amd-and-anthropic-sign-major-chips-and-investment-deal-4adfdc45">AMD and Anthropic Sign Major Chips-and-Investment Deal</a>
+              <span>The Wall Street Journal · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://openai.com/index/introducing-openai-presence">OpenAI Presence</a>
+              <span>OpenAI · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://www.cerebras.ai/press-release/amd-and-cerebras-announce-industry-leading-ultra-low-latency-and-high-throughput-ai-inference">AMD and Cerebras Launch AI Inference Solution</a>
+              <span>Cerebras · For Builders</span>
+            </li>
+            <li>
+              <a href="https://arxiv.org/abs/2607.12746">Color Pass-Through via Camera-Display Coupling</a>
+              <span>arXiv · Research Watch</span>
+            </li>
+          </ol>
+        </details>
+
+        <details
+          class="history-issue"
+          data-history-issue
+          data-search-text="24 July 2026 LM Studio Bionic OpenAI long-horizon models executive Gigatoken GitHub builders RESOURCE2SKILL arXiv research"
+        >
+          <summary>
+            <span>
+              <strong>Friday 24 July 2026</strong>
+              <small>5 stories · Published automatically</small>
+            </span>
+            <span class="history-issue__action">View issue</span>
+          </summary>
+          <ol class="history-stories">
+            <li>
+              <a href="https://openai.com/index/safety-alignment-long-horizon-models">Safety and alignment in an era of long-horizon models</a>
+              <span>OpenAI · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://lmstudio.ai/blog/introducing-lm-studio-bionic">Introducing LM Studio Bionic</a>
+              <span>LM Studio · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://claude.com/product/claude-security">Claude Security</a>
+              <span>Anthropic · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://github.com/marcelroed/gigatoken">Gigatoken</a>
+              <span>GitHub · For Builders</span>
+            </li>
+            <li>
+              <a href="https://arxiv.org/abs/2606.29538">RESOURCE2SKILL</a>
+              <span>arXiv · Research Watch</span>
+            </li>
+          </ol>
+        </details>
+
+        <details
+          class="history-issue"
+          data-history-issue
+          data-search-text="23 July 2026 Mistral Microsoft France 24 executive OpenAI Effingham County executive ABot World arXiv builders camera display research"
+        >
+          <summary>
+            <span>
+              <strong>Thursday 23 July 2026</strong>
+              <small>5 stories · Published automatically</small>
+            </span>
+            <span class="history-issue__action">View issue</span>
+          </summary>
+          <ol class="history-stories">
+            <li>
+              <a href="https://www.france24.com/en/france/20260721-microsoft-strikes-multi-billion-dollar-deal-to-expand-france-ai-firm-mistral">Microsoft and Mistral agree multibillion-dollar deal</a>
+              <span>France 24 · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community">Building AI infrastructure with the Effingham County community</a>
+              <span>OpenAI · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://thenextweb.com/news/alibaba-t-head-sail-open-source-nvidia-cuda-alternative">Alibaba open-sources its AI chip software stack</a>
+              <span>The Next Web · Executive Signal</span>
+            </li>
+            <li>
+              <a href="https://arxiv.org/abs/2607.19191">ABot-World-0</a>
+              <span>arXiv · For Builders</span>
+            </li>
+            <li>
+              <a href="https://arxiv.org/abs/2607.12746">Color Pass-Through via Camera-Display Coupling</a>
+              <span>arXiv · Research Watch</span>
+            </li>
+          </ol>
+        </details>
+      </div>
+
+      <p class="empty-state" data-history-empty hidden>No Daily issues match that search.</p>
+    </main>
+
+    <footer class="site-footer">
+      <p>AI Daily + Weekly Brief <span aria-hidden="true">·</span> Melbourne</p>
+    </footer>
+  </body>
+</html>
