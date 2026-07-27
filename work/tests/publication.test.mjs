@@ -120,7 +120,15 @@ test("rejects duplicate links and evidence-review flags", async () => {
   );
 });
 
-test("rejects missing, unsafe, or ungenerated public summaries", async () => {
+test("accepts an explicit link-only story but rejects unsafe summary states", async () => {
+  const unavailable = await seedRun("daily");
+  delete unavailable.items[0].briefSummary;
+  unavailable.items[0].summaryStatus = "unavailable";
+  assert.deepEqual(validatePublicationRun(unavailable).summaryCoverage, {
+    generated: 4,
+    unavailable: 1,
+  });
+
   const missing = await seedRun("daily");
   delete missing.items[0].briefSummary;
   assert.throws(
@@ -140,7 +148,14 @@ test("rejects missing, unsafe, or ungenerated public summaries", async () => {
   status.items[0].summaryStatus = "not-generated";
   assert.throws(
     () => validatePublicationRun(status),
-    /summaryStatus must be generated/,
+    /summaryStatus must be generated or unavailable/,
+  );
+
+  const unvalidated = await seedRun("daily");
+  unvalidated.items[0].summaryStatus = "unavailable";
+  assert.throws(
+    () => validatePublicationRun(unvalidated),
+    /briefSummary must be omitted when unavailable/,
   );
 });
 

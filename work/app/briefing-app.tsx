@@ -22,7 +22,7 @@ export type CollectedStory = {
   publishedAt: string;
   editorialLane: EditorialLane;
   briefSummary?: string;
-  summaryStatus?: "generated" | "not-generated";
+  summaryStatus?: "generated" | "unavailable" | "not-generated";
   readingTime?: string | null;
   originalDomain?: string;
   discoveredBy?: string[];
@@ -151,6 +151,9 @@ function StoryRow({
   index: number;
 }) {
   const discovery = discoveryLabel(story);
+  const summary =
+    story.briefSummary ??
+    (story.summaryStatus === "unavailable" ? null : fallbackSummary(story));
   const meta = [
     publisherLabel(story),
     formatDate(story.publishedAt),
@@ -172,9 +175,7 @@ function StoryRow({
             {story.title}
           </a>
         </h3>
-        <p className="story-row__summary">
-          {story.briefSummary ?? fallbackSummary(story)}
-        </p>
+        {summary ? <p className="story-row__summary">{summary}</p> : null}
         <p className="story-row__meta">{meta.join(" · ")}</p>
       </div>
     </article>
@@ -544,8 +545,8 @@ function SystemView() {
           <p>
             Duplicates and promotional noise are reduced, then the strongest
             five Daily stories or ten Weekly stories are selected in their
-            cadence-specific editorial mix and given concise, evidence-grounded
-            summaries.
+            cadence-specific editorial mix. Concise, evidence-grounded
+            summaries are added when generation succeeds.
           </p>
         </article>
         <i aria-hidden="true">→</i>
@@ -554,7 +555,9 @@ function SystemView() {
           <h2>Check</h2>
           <p>
             The run must be complete, source-healthy, uniquely linked, and
-            evidence-ready before it can replace the current briefing.
+            evidence-ready before it can replace the current briefing. A
+            summary failure leaves that selected story as a source-linked
+            headline instead of blocking the issue.
           </p>
         </article>
         <i aria-hidden="true">→</i>

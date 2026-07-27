@@ -235,6 +235,10 @@ test("builds a publishable run and source-health report without source prose", a
     draft.editorialPolicy.directXCoverage.directIngestionStatus,
     "not-configured",
   );
+  assert.deepEqual(draft.sourceHealth.summaryCoverage, {
+    generated: 0,
+    unavailable: 10,
+  });
 
   const { draft: dailyDraft } = await collectBrief({
     config,
@@ -243,6 +247,12 @@ test("builds a publishable run and source-health report without source prose", a
     lookbackDays: 7,
     excludedUrls: [draft.items[0].url],
     fetchText: fakeFetchText,
+    summarizeCandidates: async (candidates) =>
+      candidates.map((_, index) =>
+        index === 0
+          ? null
+          : "The selected source describes a material artificial intelligence development and provides enough evidence to establish what changed. The briefing preserves the original link for full context while presenting the item within its assigned editorial lane and without promotional framing.",
+      ),
   });
   assert.equal(dailyDraft.runId, "daily:2026-07-23");
   assert.equal(dailyDraft.items.length, 5);
@@ -255,12 +265,51 @@ test("builds a publishable run and source-health report without source prose", a
     dailyDraft.items.some((item) => item.url === draft.items[0].url),
     false,
   );
+  assert.deepEqual(dailyDraft.sourceHealth.summaryCoverage, {
+    generated: 4,
+    unavailable: 1,
+  });
+  assert.equal(dailyDraft.items[0].summaryStatus, "unavailable");
+  assert.equal("briefSummary" in dailyDraft.items[0], false);
+  assert.equal(
+    dailyDraft.items.slice(1).every(
+      (item) =>
+        item.summaryStatus === "generated" &&
+        typeof item.briefSummary === "string",
+    ),
+    true,
+  );
 
   for (const item of draft.items) {
     assert.equal("editorialText" in item, false);
     assert.equal("preliminaryTitle" in item, false);
-    assert.equal(item.summaryStatus, "not-generated");
+    assert.equal(item.summaryStatus, "unavailable");
     assert.equal(item.reviewStatus, "needs-review");
     assert.ok(item.sourceAttributions.length > 0);
   }
+
+  const { draft: summaryFailureDraft } = await collectBrief({
+    config,
+    cadence: "daily",
+    asOf: new Date("2026-07-23T00:00:00.000Z"),
+    lookbackDays: 7,
+    fetchText: fakeFetchText,
+    summarizeCandidates: async () => {
+      throw new Error("summary provider unavailable");
+    },
+  });
+
+  assert.equal(summaryFailureDraft.items.length, 5);
+  assert.equal(
+    summaryFailureDraft.items.every(
+      (item) =>
+        item.summaryStatus === "unavailable" &&
+        !("briefSummary" in item),
+    ),
+    true,
+  );
+  assert.deepEqual(summaryFailureDraft.sourceHealth.summaryCoverage, {
+    generated: 0,
+    unavailable: 5,
+  });
 });

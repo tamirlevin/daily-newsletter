@@ -77,17 +77,7 @@ async function main() {
         ),
       )
     : [];
-  const requireSummaries =
-    options.requireSummaries === true ||
-    options.requireSummaries === "true" ||
-    process.env.REQUIRE_BRIEF_SUMMARIES === "true";
   const githubToken = process.env.GITHUB_TOKEN?.trim();
-
-  if (requireSummaries && !githubToken) {
-    throw new Error(
-      "GITHUB_TOKEN is required when brief summaries are required",
-    );
-  }
 
   if (!Number.isFinite(lookbackDays) || lookbackDays <= 0) {
     throw new Error("--lookback-days must be a positive number");
@@ -111,17 +101,25 @@ async function main() {
     excludedUrls,
     summarizeCandidates: githubToken
       ? (candidates) =>
-          generateBriefSummaries(candidates, { token: githubToken })
+          generateBriefSummaries(candidates, {
+            token: githubToken,
+            onFailure: ({ id, error }) => {
+              process.stderr.write(
+                `Summary unavailable for ${id}: ${error.message}\n`,
+              );
+            },
+          })
       : undefined,
   });
-  if (
-    requireSummaries &&
-    draft.items.some(
-      (item) =>
-        item.summaryStatus !== "generated" || !item.briefSummary,
-    )
-  ) {
-    throw new Error("Every selected story needs a generated brief summary");
+  const unavailableSummaries = draft.items.filter(
+    (item) => item.summaryStatus === "unavailable",
+  ).length;
+  if (unavailableSummaries > 0) {
+    process.stderr.write(
+      `${unavailableSummaries} selected ${
+        unavailableSummaries === 1 ? "story has" : "stories have"
+      } no publishable summary; link-only fallback will be used.\n`,
+    );
   }
   const stamp = outputStamp(asOf);
   const draftPath = path.resolve(

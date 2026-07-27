@@ -69,6 +69,12 @@ function storyHtml(story, index, isLast) {
     storyDate(story),
     story.readingTime,
   ].filter(Boolean);
+  const summaryHtml = story.briefSummary
+    ? `
+        <p style="margin:0 0 8px;font:400 14px/1.5 Arial,sans-serif;color:${COLOURS.ink}">
+          ${escapeHtml(story.briefSummary)}
+        </p>`
+    : "";
   return `
     <tr>
       <td style="padding:14px 0 ${isLast ? "4px" : "15px"};border-bottom:${isLast ? "0" : `1px solid ${COLOURS.rule}`}">
@@ -78,9 +84,7 @@ function storyHtml(story, index, isLast) {
         <h3 style="margin:0 0 7px;font:700 17px/1.3 Arial,sans-serif;color:${COLOURS.ink}">
           <a href="${escapeHtml(story.url)}" style="color:${COLOURS.ink};text-decoration:underline;text-decoration-color:${COLOURS.accent};text-decoration-thickness:1px;text-underline-offset:3px">${escapeHtml(story.title)}</a>
         </h3>
-        <p style="margin:0 0 8px;font:400 14px/1.5 Arial,sans-serif;color:${COLOURS.ink}">
-          ${escapeHtml(story.briefSummary)}
-        </p>
+        ${summaryHtml}
         <p style="margin:0;font:600 10px/1.45 Arial,sans-serif;letter-spacing:.04em;color:${COLOURS.muted}">
           ${escapeHtml(storyDomain(story))}
           ${storyDiscovery(story) ? ` &nbsp;·&nbsp; ${escapeHtml(storyDiscovery(story))}` : ""}
@@ -184,7 +188,7 @@ export function renderDailyEmail(run, publicBaseUrl) {
     ...stories.flatMap((story, index) => [
       `${index + 1}. ${story.title}`,
       `${LANE_LABELS[story.editorialLane] ?? story.editorialLane} · ${storySource(story)}`,
-      story.briefSummary,
+      ...(story.briefSummary ? [story.briefSummary] : []),
       story.url,
       "",
     ]),

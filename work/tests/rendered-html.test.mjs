@@ -126,6 +126,27 @@ test("renders a schema-version-2 run without generated summaries", async () => {
   assert.match(html, /Open the linked source for the full published context/);
 });
 
+test("renders a schema-version-3 unavailable summary as a link-only row", async () => {
+  const daily = await seedRun("daily");
+  const weekly = await seedRun("weekly");
+  const linkOnlyTitle = daily.items[0].title;
+  delete daily.items[0].briefSummary;
+  daily.items[0].summaryStatus = "unavailable";
+
+  const { renderWithRuns } = await serverRenderer();
+  const html = renderWithRuns(
+    { daily: [daily], weekly: [weekly] },
+    "daily",
+  );
+
+  assert.match(html, new RegExp(linkOnlyTitle));
+  assert.doesNotMatch(
+    html,
+    /This item was selected for commercial or operating impact/,
+  );
+  assert.equal((html.match(/class="story-row__summary"/g) ?? []).length, 4);
+});
+
 test("keeps separate Daily and Weekly reader histories", async () => {
   const bundle = await clientBundle();
 
