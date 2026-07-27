@@ -51,8 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '3' }}
-          REQUIRE_BRIEF_SUMMARIES: "true"
-        run: npm run collect -- --cadence daily --lookback-days "$LOOKBACK_DAYS" --exclude-file data/recent/daily.json --require-summaries
+        run: npm run collect -- --cadence daily --lookback-days "$LOOKBACK_DAYS" --exclude-file data/recent/daily.json
 
       - name: Add readable run summary
         run: npm run summarize:draft -- --cadence daily >> "$GITHUB_STEP_SUMMARY"

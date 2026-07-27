@@ -325,25 +325,39 @@ export async function collectBrief({
     editorialMix,
     config.selectionRules,
   );
-  let selectedWithSummaries = selected;
+  let selectedWithSummaries = selected.map((candidate) => ({
+    ...candidate,
+    summaryStatus: "unavailable",
+  }));
   if (summarizeCandidates) {
     const withEvidence = await mapWithConcurrency(
       selected,
       config.requestConcurrency,
       (candidate) => addSummaryEvidence(candidate, fetchText),
     );
-    const summaries = await summarizeCandidates(withEvidence);
-    if (
-      !Array.isArray(summaries) ||
-      summaries.length !== withEvidence.length
-    ) {
-      throw new Error("Summary generation returned the wrong story count");
+    let summaries;
+    try {
+      summaries = await summarizeCandidates(withEvidence);
+      if (
+        !Array.isArray(summaries) ||
+        summaries.length !== withEvidence.length
+      ) {
+        throw new Error("Summary generation returned the wrong story count");
+      }
+    } catch {
+      summaries = withEvidence.map(() => null);
     }
-    selectedWithSummaries = withEvidence.map((candidate, index) => ({
-      ...candidate,
-      briefSummary: summaries[index],
-      summaryStatus: "generated",
-    }));
+    selectedWithSummaries = withEvidence.map((candidate, index) => {
+      const briefSummary =
+        typeof summaries[index] === "string" && summaries[index].trim()
+          ? summaries[index].trim()
+          : null;
+      return {
+        ...candidate,
+        ...(briefSummary ? { briefSummary } : {}),
+        summaryStatus: briefSummary ? "generated" : "unavailable",
+      };
+    });
   }
   for (const sourceHealth of health) {
     sourceHealth.selectedCandidates = selectedWithSummaries.filter((candidate) =>
@@ -402,6 +416,12 @@ export async function collectBrief({
         eligibleCandidates.filter(isDirectXLink).length,
       directXLinksInSelection:
         selectedWithSummaries.filter(isDirectXLink).length,
+      generatedSummaries: selectedWithSummaries.filter(
+        (candidate) => candidate.summaryStatus === "generated",
+      ).length,
+      unavailableSummaries: selectedWithSummaries.filter(
+        (candidate) => candidate.summaryStatus === "unavailable",
+      ).length,
     },
   };
 
@@ -434,6 +454,10 @@ export async function collectBrief({
       healthySources: health.filter((source) => source.status === "healthy")
         .length,
       configuredSources: health.length,
+      summaryCoverage: {
+        generated: healthReport.totals.generatedSummaries,
+        unavailable: healthReport.totals.unavailableSummaries,
+      },
     },
     items: selectedWithSummaries.map(publicCandidate),
   };

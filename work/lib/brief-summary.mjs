@@ -129,6 +129,7 @@ export async function generateBriefSummaries(
     fetchImpl = fetch,
     endpoint = DEFAULT_ENDPOINT,
     model = DEFAULT_MODEL,
+    onFailure = () => {},
   } = {},
 ) {
   if (!Array.isArray(candidates) || candidates.length === 0) return [];
@@ -190,19 +191,25 @@ export async function generateBriefSummaries(
   const summariesById = new Map(
     parsed.summaries.map((entry) => [String(entry?.id ?? ""), entry?.summary]),
   );
-  if (summariesById.size !== candidates.length) {
-    throw new Error("The summary model returned the wrong number of stories");
-  }
 
   return candidates.map((candidate, index) => {
     const value = summariesById.get(candidate.id);
     if (value === undefined) {
-      throw new Error(`The summary model omitted story ${candidate.id}`);
+      onFailure({
+        id: candidate.id,
+        error: new Error(`The summary model omitted story ${candidate.id}`),
+      });
+      return null;
     }
-    return validateBriefSummary(value, {
-      field: `summaries[${index}].summary`,
-      sourceMaterial: sourceMaterial(candidate),
-    });
+    try {
+      return validateBriefSummary(value, {
+        field: `summaries[${index}].summary`,
+        sourceMaterial: sourceMaterial(candidate),
+      });
+    } catch (error) {
+      onFailure({ id: candidate.id, error });
+      return null;
+    }
   });
 }
 

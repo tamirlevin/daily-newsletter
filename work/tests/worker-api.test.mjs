@@ -293,6 +293,10 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     PUBLIC_BASE_URL: "https://brief.example",
   };
   const run = await seedRun("daily");
+  const linkOnlyStory = run.items[1];
+  const omittedSummary = linkOnlyStory.briefSummary;
+  delete linkOnlyStory.briefSummary;
+  linkOnlyStory.summaryStatus = "unavailable";
 
   const beforeAcceptance = await worker.fetch(
     deliveryRequest(run.runId, token),
@@ -320,10 +324,16 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     assert.match(message.subject, /AI Daily Brief/);
     assert.match(message.html, /Five AI developments worth your attention/);
     assert.match(message.html, /Google Research examines how artificial intelligence/);
+    assert.match(message.html, new RegExp(linkOnlyStory.title));
+    assert.doesNotMatch(message.html, new RegExp(omittedSummary));
+    assert.doesNotMatch(message.html, /undefined/);
+    assert.doesNotMatch(message.html, /summary unavailable/i);
     assert.doesNotMatch(message.html, />Read source/);
     assert.doesNotMatch(message.html, /Georgia,serif/);
     assert.match(message.html, /font:700 17px\/1\.3 Arial,sans-serif/);
     assert.match(message.text, /Google Research examines how artificial intelligence/);
+    assert.match(message.text, new RegExp(linkOnlyStory.title));
+    assert.doesNotMatch(message.text, new RegExp(omittedSummary));
     return new Response(JSON.stringify({ id: "email_123" }), {
       status: 200,
       headers: { "content-type": "application/json" },

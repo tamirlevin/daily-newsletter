@@ -139,12 +139,19 @@ export function validatePublicationRun(payload) {
     itemUrls.add(url);
 
     validIsoDate(item.publishedAt, `items[${index}].publishedAt`);
-    validateBriefSummary(item.briefSummary, {
-      field: `items[${index}].briefSummary`,
-    });
-    if (item.summaryStatus !== "generated") {
+    if (item.summaryStatus === "generated") {
+      validateBriefSummary(item.briefSummary, {
+        field: `items[${index}].briefSummary`,
+      });
+    } else if (item.summaryStatus === "unavailable") {
+      if ("briefSummary" in item) {
+        throw new Error(
+          `items[${index}].briefSummary must be omitted when unavailable`,
+        );
+      }
+    } else {
       throw new Error(
-        `items[${index}].summaryStatus must be generated`,
+        `items[${index}].summaryStatus must be generated or unavailable`,
       );
     }
     if (
@@ -193,6 +200,14 @@ export function validatePublicationRun(payload) {
     mix,
     retainedRuns: profile.retainedRuns,
     emailEligible: profile.emailEnabled,
+    summaryCoverage: {
+      generated: payload.items.filter(
+        (item) => item.summaryStatus === "generated",
+      ).length,
+      unavailable: payload.items.filter(
+        (item) => item.summaryStatus === "unavailable",
+      ).length,
+    },
   };
 }
 

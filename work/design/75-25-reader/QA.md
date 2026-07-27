@@ -110,6 +110,7 @@ These checks apply only after separate approval to edit the application.
 | S03 | Weak language | Tests and editorial review reject mere headline restatement, source-description repetition, unsupported prediction, announcement superlatives, and phrases such as “marks a significant milestone” without evidence. | Both |
 | S04 | Embedded samples | Daily and Weekly fallback samples demonstrate the approved summary standard and still pass publication validation. | Both |
 | S05 | Version 2 history | A stored schema-version-2 run without `briefSummary` renders without error through the existing factual fallback; it remains visibly usable but is exempt from the new-summary word-count rule. | Automated |
+| S06 | Link-only fallback | A valid schema-version-3 story with `summaryStatus: "unavailable"` and no `briefSummary` renders as a headline, metadata, and source link without placeholder prose. Other valid summaries in the same issue remain visible. | Automated |
 | S06 | Public boundary | Internal source excerpts, model prompts, evidence text, credentials, and editorial-only fields do not appear in rendered HTML, client data, email, or API output. | Automated |
 
 ### Functional and operating invariants

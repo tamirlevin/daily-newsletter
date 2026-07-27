@@ -63,13 +63,16 @@ and **How it works** views.
 13. Daily uses a three-day discovery window so the research slot remains viable
     on weekends. Before collection, the workflow loads retained Daily URLs from
     Sites and excludes them so the wider window does not repeat recent stories.
-14. Every published story includes an independently written 35–75 word
-    `briefSummary`. GitHub Actions generates and overlap-checks summaries with
-    GitHub Models using its automatic `GITHUB_TOKEN`; no additional model
-    account or repository secret is required. Sites rejects missing,
-    ungenerated, promotional, markup-bearing, or overlong summaries.
-    Summary-bearing publication payloads use schema version 3; stored version 2
-    runs remain readable as historical data.
+14. Summaries are best-effort enrichment, not a publication gate. GitHub
+    Actions attempts an independently written 35–75 word `briefSummary` for
+    each selected story with GitHub Models and its automatic `GITHUB_TOKEN`.
+    A valid summary uses `summaryStatus: "generated"` and remains subject to
+    overlap, promotional-language, markup, and length checks. If generation or
+    validation fails, the already-valid selected story uses
+    `summaryStatus: "unavailable"`, omits `briefSummary`, and publishes as a
+    source-linked headline with metadata. `not-generated` is never publishable.
+    Schema-version-3 payloads support generated and explicitly unavailable
+    summaries; stored version-2 runs remain readable as historical data.
 
 ## Architecture
 
@@ -78,7 +81,7 @@ GitHub Actions (.github/workflows/collect-daily.yml and collect.yml)
   -> Node collectors (work/lib/collector/)
   -> cadence profile (Daily 5 or Weekly 10)
   -> deduplicate, enrich, score, and select
-  -> GitHub Models evidence-grounded brief summaries
+  -> best-effort GitHub Models evidence-grounded brief summaries
   -> timestamped draft + source-health diagnostic artifact
   -> work/scripts/publish-latest.mjs
   -> authenticated POST /api/ingest
@@ -184,9 +187,10 @@ npm run publish:latest -- --cadence weekly
 ```
 
 - `npm run collect` writes ignored files under cadence-specific draft and
-  source-health directories. Scheduled workflows also generate the required
-  public summaries using the job's automatic GitHub token. A local collection
-  without that token remains diagnostic and cannot pass publication.
+  source-health directories. Scheduled workflows attempt public summaries
+  using the job's automatic GitHub token. A failed or unavailable summary
+  becomes a link-only story; it does not bypass any source, ranking, mix, or
+  evidence gate.
 - `npm run publish:latest` writes to the configured Site. It requires
   `SITES_INGEST_URL` and `SITES_INGEST_TOKEN`; do not run it against production
   without authorization.

@@ -87,3 +87,84 @@ test("generates one independently validated summary per selected story", async (
   assert.equal(body.model, "openai/gpt-4o-mini");
   assert.match(body.messages[0].content, /untrusted data/);
 });
+
+test("keeps valid summaries when another selected story has invalid output", async () => {
+  const secondCandidate = {
+    ...candidate,
+    id: "story-2",
+    title: "A second material AI infrastructure agreement",
+  };
+  const summary =
+    "Two companies agreed to roll out accelerator hardware and supporting software through a phased infrastructure programme. Work is expected to start this year, but the source material does not specify the commercial value or the total number of systems involved.";
+  const failures = [];
+
+  const summaries = await generateBriefSummaries(
+    [candidate, secondCandidate],
+    {
+      token: "github-token",
+      onFailure: (failure) => failures.push(failure),
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  summaries: [
+                    { id: candidate.id, summary },
+                    {
+                      id: secondCandidate.id,
+                      summary: "Too short to publish safely.",
+                    },
+                  ],
+                }),
+              },
+            }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    },
+  );
+
+  assert.deepEqual(summaries, [summary, null]);
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].id, secondCandidate.id);
+  assert.match(failures[0].error.message, /35-75 words/);
+});
+
+test("marks an omitted story unavailable without discarding valid summaries", async () => {
+  const secondCandidate = {
+    ...candidate,
+    id: "story-2",
+    title: "A second material AI infrastructure agreement",
+  };
+  const summary =
+    "Two companies agreed to roll out accelerator hardware and supporting software through a phased infrastructure programme. Work is expected to start this year, but the source material does not specify the commercial value or the total number of systems involved.";
+
+  const summaries = await generateBriefSummaries(
+    [candidate, secondCandidate],
+    {
+      token: "github-token",
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  summaries: [{ id: candidate.id, summary }],
+                }),
+              },
+            }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    },
+  );
+
+  assert.deepEqual(summaries, [summary, null]);
+});
