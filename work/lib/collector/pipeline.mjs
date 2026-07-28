@@ -7,8 +7,10 @@ import {
   enrichAnthropicCandidate,
 } from "./anthropic.mjs";
 import {
+  computeMixQuotas,
   countEditorialMix,
   dedupeCandidates,
+  isPublicationEligibleCandidate,
   scoreCandidate,
   selectEditorialMix,
 } from "./editorial.mjs";
@@ -319,12 +321,33 @@ export async function collectBrief({
   const rescored = dedupeCandidates(enriched, { fuzzy: true })
     .filter((candidate) => !isExcluded(candidate))
     .map((candidate) => scoreCandidate(candidate, config, normalizedAsOf));
-  const selected = selectEditorialMix(
-    rescored,
-    Math.min(resolvedMaxItems, rescored.length),
-    editorialMix,
-    config.selectionRules,
+  const publicationEligible = rescored.filter(
+    isPublicationEligibleCandidate,
   );
+  const selected = selectEditorialMix(
+    publicationEligible,
+    resolvedMaxItems,
+    editorialMix,
+    {
+      ...config.selectionRules,
+      preserveEditorialMix: true,
+    },
+  );
+  const expectedMix = computeMixQuotas(resolvedMaxItems, editorialMix);
+  const selectedMix = countEditorialMix(selected);
+  if (
+    selected.length !== resolvedMaxItems ||
+    Object.entries(expectedMix).some(
+      ([lane, expected]) => selectedMix[lane] !== expected,
+    )
+  ) {
+    const availableMix = countEditorialMix(publicationEligible);
+    throw new Error(
+      `Unable to satisfy ${normalizedCadence} editorial mix. ` +
+      `Required ${JSON.stringify(expectedMix)}; ` +
+      `available publishable candidates ${JSON.stringify(availableMix)}.`,
+    );
+  }
   let selectedWithSummaries = selected.map((candidate) => ({
     ...candidate,
     summaryStatus: "unavailable",
@@ -400,6 +423,9 @@ export async function collectBrief({
       preliminaryCandidates: preliminary.length,
       enrichmentPoolCandidates: enrichmentPool.length,
       postEnrichmentCandidates: rescored.length,
+      publicationEligibleCandidates: publicationEligible.length,
+      rejectedPublicationCandidates:
+        rescored.length - publicationEligible.length,
       selectedCandidates: selectedWithSummaries.length,
       selectedWithPrimaryEvidence: selectedWithSummaries.filter(
         (candidate) =>

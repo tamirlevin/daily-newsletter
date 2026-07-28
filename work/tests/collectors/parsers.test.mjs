@@ -45,7 +45,7 @@ test("extracts TLDR stories while removing sponsors and house promotion", async 
     publishedAt: "2026-07-22T00:00:00.000Z",
   });
 
-  assert.equal(stories.length, 4);
+  assert.equal(stories.length, 5);
   assert.equal(
     stories[0].url,
     "https://example.com/enterprise-agents?id=42",

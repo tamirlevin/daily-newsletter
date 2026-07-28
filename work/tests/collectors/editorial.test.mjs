@@ -4,6 +4,7 @@ import {
   classifyLane,
   computeMixQuotas,
   dedupeCandidates,
+  isPublicationEligibleCandidate,
   isPromotionalStory,
   prepareCandidate,
   scoreCandidate,
@@ -425,6 +426,98 @@ test("reserves the research lane for explicit papers, studies, or benchmarks", (
   assert.notEqual(analysis.lane, "research");
   assert.equal(paper.lane, "research");
   assert.notEqual(benchmarkProduct.lane, "research");
+});
+
+test("keeps indexed academic papers in the research lane despite executive keywords", () => {
+  const paper = classifyLane({
+    title:
+      "Molt: A Scalable PyTorch-Native Training Framework for Agentic Reinforcement Learning",
+    url: "https://arxiv.org/abs/2607.21653",
+    section: "Research Watch",
+    editorialText:
+      "A scalable framework for agentic reinforcement learning, security, cost, and deployment. Research paper benchmark study.",
+    sourceAttributions: [
+      {
+        sourceId: "huggingface-papers",
+        sourceRole: "research-index",
+        sourceKind: "discovery",
+      },
+    ],
+  });
+
+  assert.equal(paper.lane, "research");
+});
+
+test("filters candidates that the publication gate cannot accept", () => {
+  const candidate = (url, flags = {}) => ({
+    url,
+    flags,
+  });
+
+  assert.equal(
+    isPublicationEligibleCandidate(
+      candidate("https://example.com/valid"),
+    ),
+    true,
+  );
+  assert.equal(
+    isPublicationEligibleCandidate(
+      candidate(
+        "http://microsoft.ai/news/introducing-mai-cyber-1-flash-inside-mdash",
+      ),
+    ),
+    false,
+  );
+  assert.equal(
+    isPublicationEligibleCandidate(
+      candidate("https://example.com/hype", {
+        promotionalLanguage: true,
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    isPublicationEligibleCandidate(
+      candidate("https://example.com/unsupported", {
+        needsPrimaryEvidenceReview: true,
+      }),
+    ),
+    false,
+  );
+});
+
+test("preserves exact lane quotas instead of filling from another lane", () => {
+  const candidates = [
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `executive-${index}`,
+      editorialLane: "executive",
+      score: 100 - index,
+    })),
+    {
+      id: "technical-0",
+      editorialLane: "technical",
+      score: 80,
+    },
+  ];
+
+  const selected = selectEditorialMix(
+    candidates,
+    5,
+    { executive: 0.6, technical: 0.2, research: 0.2 },
+    { preserveEditorialMix: true },
+  );
+
+  assert.deepEqual(
+    selected.reduce(
+      (counts, item) => ({
+        ...counts,
+        [item.editorialLane]: counts[item.editorialLane] + 1,
+      }),
+      { executive: 0, technical: 0, research: 0 },
+    ),
+    { executive: 3, technical: 1, research: 0 },
+  );
+  assert.equal(selected.length, 4);
 });
 
 test("treats sole-source Launch HN pitches as technical review candidates", () => {

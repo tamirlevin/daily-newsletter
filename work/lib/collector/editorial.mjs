@@ -402,12 +402,15 @@ export function classifyLane(candidate) {
     /\b(?:paper|study|research(?:ers?)?|theorem)\b/i.test(candidate.title);
   const researchQualified =
     researchIndexed || academicUrl || explicitResearchTitle;
+  const indexedAcademicResearch = researchIndexed && academicUrl;
   const executive = signalScore(text, EXECUTIVE_SIGNALS);
   const technical = signalScore(text, TECHNICAL_SIGNALS);
   const research = signalScore(text, RESEARCH_SIGNALS);
 
   let lane = "executive";
-  if (
+  if (indexedAcademicResearch) {
+    lane = "research";
+  } else if (
     researchQualified &&
     research.score >= 2 &&
     research.score >= technical.score + 0.5 &&
@@ -646,6 +649,21 @@ export function scoreCandidate(candidate, config, asOf) {
   };
 }
 
+export function isPublicationEligibleCandidate(candidate) {
+  let url;
+  try {
+    url = new URL(candidate.url);
+  } catch {
+    return false;
+  }
+
+  return (
+    url.protocol === "https:" &&
+    candidate.flags?.promotionalLanguage !== true &&
+    candidate.flags?.needsPrimaryEvidenceReview !== true
+  );
+}
+
 export function prepareCandidate(candidate) {
   const canonicalUrl = canonicalizeUrl(candidate.url);
   if (!canonicalUrl) return null;
@@ -758,6 +776,7 @@ export function selectEditorialMix(
     maxUncorroboratedOfficialItemsPerVendor = Number.POSITIVE_INFINITY,
     maxSoleDiscoveryItemsBySource = {},
     maxSoleDiscoveryItemsBySourcePerLane = {},
+    preserveEditorialMix = false,
   } = {},
 ) {
   const quotas = computeMixQuotas(maxItems, mix);
@@ -830,6 +849,43 @@ export function selectEditorialMix(
       addCandidate(candidate);
       laneCount += 1;
     }
+  }
+
+  if (preserveEditorialMix) {
+    for (const lane of LANE_ORDER) {
+      let laneCount = selected.filter(
+        (candidate) => candidate.editorialLane === lane,
+      ).length;
+      const blockedInLane = candidates
+        .filter(
+          (candidate) =>
+            candidate.editorialLane === lane &&
+            !selectedIds.has(candidate.id),
+        )
+        .sort((left, right) => right.score - left.score);
+
+      for (const candidate of blockedInLane) {
+        if (laneCount >= quotas[lane]) break;
+        addCandidate({
+          ...candidate,
+          flags: {
+            ...candidate.flags,
+            selectionGuardrailRelaxed: true,
+          },
+          selectionReasons: [
+            ...(candidate.selectionReasons ?? []),
+            "selection guardrail relaxed to preserve editorial mix",
+          ],
+        });
+        laneCount += 1;
+      }
+    }
+
+    return LANE_ORDER.flatMap((lane) =>
+      selected
+        .filter((candidate) => candidate.editorialLane === lane)
+        .sort((left, right) => right.score - left.score),
+    );
   }
 
   if (selected.length < maxItems) {
