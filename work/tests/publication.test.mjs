@@ -3,6 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { BRIEFING_PROFILES } from "../lib/briefing-profiles.mjs";
 import {
+  MAX_MODEL_LAB_ITEMS_PER_VENDOR,
+  MODEL_LAB_VENDORS,
+} from "../lib/model-labs.mjs";
+import {
   EXPECTED_MIX_BY_CADENCE,
   preparePublishedRun,
   RETAINED_RUNS_BY_CADENCE,
@@ -54,6 +58,10 @@ test("collector configuration matches the publication profiles", async () => {
 
   for (const cadence of ["daily", "weekly"]) {
     assert.deepEqual(
+      config.cadences[cadence].editorialMix,
+      BRIEFING_PROFILES[cadence].editorialMix,
+    );
+    assert.deepEqual(
       config.cadences[cadence].expectedMix,
       BRIEFING_PROFILES[cadence].expectedMix,
     );
@@ -65,7 +73,16 @@ test("collector configuration matches the publication profiles", async () => {
       config.cadences[cadence].retainedRuns,
       BRIEFING_PROFILES[cadence].retainedRuns,
     );
+    assert.deepEqual(
+      config.cadences[cadence].selectionRules,
+      BRIEFING_PROFILES[cadence].selectionRules,
+    );
   }
+  assert.deepEqual(config.selectionRules.modelLabVendors, MODEL_LAB_VENDORS);
+  assert.equal(
+    config.selectionRules.maxModelLabItemsPerVendor,
+    MAX_MODEL_LAB_ITEMS_PER_VENDOR,
+  );
 });
 
 test("marks an accepted run as automatically published", async () => {
@@ -120,6 +137,53 @@ test("rejects duplicate links and evidence-review flags", async () => {
   );
 });
 
+test("rejects model-lab concentration even through third-party coverage", async () => {
+  function retarget(item, title, url) {
+    item.title = title;
+    item.url = url;
+    delete item.canonicalUrl;
+    delete item.evidenceUrls;
+    delete item.vendor;
+  }
+
+  const sameLab = await seedRun("weekly");
+  retarget(
+    sameLab.items[0],
+    "OpenAI changes enterprise agent controls",
+    "https://example.com/openai-controls",
+  );
+  retarget(
+    sameLab.items[1],
+    "OpenAI expands ChatGPT agent distribution",
+    "https://example.net/openai-distribution",
+  );
+  assert.throws(
+    () => validatePublicationRun(sameLab),
+    /at most 1 story from model lab openai/,
+  );
+
+  const tooManyLabs = await seedRun("daily");
+  retarget(
+    tooManyLabs.items[0],
+    "OpenAI changes enterprise agents",
+    "https://example.com/openai-agents",
+  );
+  retarget(
+    tooManyLabs.items[1],
+    "Anthropic changes Claude deployment",
+    "https://example.net/anthropic-deployment",
+  );
+  retarget(
+    tooManyLabs.items[2],
+    "Google changes Gemini distribution",
+    "https://example.org/google-gemini",
+  );
+  assert.throws(
+    () => validatePublicationRun(tooManyLabs),
+    /at most 2 model-lab stories/,
+  );
+});
+
 test("accepts an explicit link-only story but rejects unsafe summary states", async () => {
   const unavailable = await seedRun("daily");
   delete unavailable.items[0].briefSummary;
@@ -165,7 +229,7 @@ test("rejects a run when too few sources are healthy", async () => {
 
   assert.throws(
     () => validatePublicationRun(run),
-    /At least 5 sources/,
+    /At least 6 sources/,
   );
 });
 

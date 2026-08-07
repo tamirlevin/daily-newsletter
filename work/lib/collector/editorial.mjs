@@ -3,9 +3,10 @@ import {
   normalizeWhitespace,
   stableId,
 } from "./shared.mjs";
+import { identifyModelLabVendors } from "../model-labs.mjs";
 
 const DAY_MS = 86_400_000;
-const LANE_ORDER = ["executive", "technical", "research"];
+const LANE_ORDER = ["executive", "technical", "builder"];
 const AGGREGATOR_HOSTS = new Set([
   "alphasignal.ai",
   "ai.tldr.tech",
@@ -17,9 +18,12 @@ const AGGREGATOR_HOSTS = new Set([
 const PRIMARY_VENDOR_HOSTS = new Map([
   ["ai.google.dev", "google"],
   ["anthropic.com", "anthropic"],
+  ["blog.cloudflare.com", "cloudflare"],
   ["blog.google", "google"],
+  ["blog.modelcontextprotocol.io", "model-context-protocol"],
   ["claude.com", "anthropic"],
   ["deepmind.google", "google"],
+  ["github.blog", "github"],
   ["openai.com", "openai"],
   ["www.anthropic.com", "anthropic"],
   ["www.claude.com", "anthropic"],
@@ -69,68 +73,66 @@ const EXECUTIVE_SIGNALS = [
     label: "material launch or availability change",
   },
   {
-    pattern: /\b(openai|anthropic|google|microsoft|meta|amazon|apple|nvidia)\b/i,
-    weight: 0.3,
-    label: "major platform relevance",
+    pattern:
+      /\b(ecosystem|platform|standard|protocol|interoperab(?:ility|le)|distribution|marketplace|agentic commerce|mcp|model context protocol)\b/i,
+    weight: 1,
+    label: "platform or ecosystem shift",
+  },
+  {
+    pattern:
+      /\b(adoption|production|automation|workflow|deployment|integrat(?:e|es|ed|ion|ions)|general availability)\b/i,
+    weight: 0.8,
+    label: "adoption or operating-model change",
   },
 ];
 
 const TECHNICAL_SIGNALS = [
   {
     pattern:
-      /\b(api|sdk|cli|framework|library|repository|github|open[- ]source|developer|coding|codebase|inference|runtime|deploy(?:ment)?|database)\b/i,
+      /\b(architecture|training|fine[- ]tun(?:e|ing)|inference|latency|throughput|token|context window|benchmark|evaluation|database|algorithm|quantization)\b/i,
     weight: 1.4,
-    label: "implementation relevance",
-  },
-  {
-    pattern: /\b(agent|model|tool|workflow|orchestration|evaluation)\b/i,
-    weight: 0.5,
-    label: "builder workflow relevance",
+    label: "technical architecture or performance detail",
   },
   {
     pattern:
-      /\b(architecture|training|fine[- ]tun(?:e|ing)|latency|throughput|token|context window)\b/i,
+      /\b(implementation|codebase|compiler|kernel|serving|observability|tracing|debugging|reliability)\b/i,
+    weight: 1,
+    label: "implementation depth",
+  },
+  {
+    pattern:
+      /\b(api|sdk|cli|framework|library|repository|github|open[- ]source|developer|coding|runtime|deploy(?:ment)?)\b/i,
+    weight: 0.5,
+    label: "implementation surface",
+  },
+];
+
+const BUILDER_SIGNALS = [
+  {
+    pattern:
+      /\b(api|sdk|cli|framework|library|repository|open[- ]source|developer platform|plugin|integration|agent skills?)\b/i,
+    weight: 1.2,
+    label: "practical builder surface",
+  },
+  {
+    pattern:
+      /\b(mcp|model context protocol|mcp apps?|webmcp|a2a|agent2agent|agent(?:ic|s)?|coding[- ]agents?|tool calling|computer use|orchestration|workflow|runtime|sandbox|gateway|harness|sub-?agents?|multi-?agents?)\b/i,
+    weight: 1,
+    label: "agent or protocol relevance",
+  },
+  {
+    pattern:
+      /\b(launch(?:es|ed)?|release[ds]?|ships?|introduc(?:e|es|ed|ing)|adds?|supports?|available|general availability|public preview|open[- ]sources?)\b/i,
     weight: 0.9,
-    label: "technical capability detail",
+    label: "available to use or adopt",
   },
 ];
 
-const RESEARCH_SIGNALS = [
-  {
-    pattern: /\b(paper|study|research|researcher|arxiv|journal|scientist)\b/i,
-    weight: 1.8,
-    label: "research result",
-  },
-  {
-    pattern:
-      /\b(benchmark|dataset|experiment|scaling law|peer review|ablation)\b/i,
-    weight: 1.2,
-    label: "evaluation or evidence",
-  },
-  {
-    pattern: /\b(novel|method|accuracy|score|theorem|proof)\b/i,
-    weight: 0.5,
-    label: "research-method signal",
-  },
-];
+const BUILDER_SUBJECT_PATTERN =
+  /\b(?:mcp|model context protocol|mcp apps?|webmcp|a2a|agent2agent|agents? sdk|agents? framework|agents? harness|agent skills?|coding[- ]agents?|sub-?agents?|multi-?agents?|tool calling|computer use|sdk|api|cli|framework|library|plugin|integration|orchestration|workflow|runtime|sandbox|gateway|developer platform)\b/i;
 
-const RESEARCH_CONSEQUENCE_SIGNALS = [
-  {
-    pattern:
-      /\b(agent(?:ic|s)?|tool[- ]use|reasoning|evaluation|benchmark|safety|alignment|reliability|oversight)\b/i,
-    weight: 1.2,
-  },
-  {
-    pattern:
-      /\b(inference|efficien(?:cy|t)|latency|cost|scal(?:e|ing)|deployment|context window)\b/i,
-    weight: 0.8,
-  },
-  {
-    pattern:
-      /\b(foundation model|language model|multimodal|world model|robotics?)\b/i,
-    weight: 0.4,
-  },
-];
+const BUILDER_AVAILABILITY_PATTERN =
+  /\b(?:launch(?:es|ed)?|release[ds]?|ships?|introduc(?:e|es|ed|ing)|adds?|supports?|available|general availability|public preview|open[- ]sources?)\b/i;
 
 const HYPE_PATTERNS = [
   /\b(revolutionary|game[- ]changing|secret weapon|breakthrough)\b/i,
@@ -269,6 +271,16 @@ function titleSimilarity(left, right) {
   return Math.max(jaccard, containment * 0.9);
 }
 
+function acquisitionSignature(title) {
+  const normalized = normalizeWhitespace(title)
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9.-]+/g, " ");
+  const match = normalized.match(
+    /\b([a-z0-9][a-z0-9.-]*)\s+(?:acquires?|acquired|to acquire)\s+([a-z0-9][a-z0-9.-]*)\b/,
+  );
+  return match ? `${match[1]}|${match[2]}` : null;
+}
+
 function isAggregatorUrl(value) {
   try {
     return AGGREGATOR_HOSTS.has(new URL(value).hostname.toLocaleLowerCase());
@@ -378,6 +390,10 @@ function shouldFuzzyMerge(left, right) {
   );
   if (timeDifference > 3 * DAY_MS) return false;
 
+  const leftAcquisition = acquisitionSignature(left.title);
+  const rightAcquisition = acquisitionSignature(right.title);
+  if (leftAcquisition && leftAcquisition === rightAcquisition) return true;
+
   return titleSimilarity(left.title, right.title) >= 0.62;
 }
 
@@ -390,61 +406,61 @@ export function classifyLane(candidate) {
   const text = normalizeWhitespace(
     `${candidate.title} ${candidate.editorialText} ${candidate.section ?? ""}`,
   );
-  const researchIndexed = candidate.sourceAttributions?.some(
-    ({ sourceRole }) => sourceRole === "research-index",
-  );
-  const researchUrl = candidate.url ?? "";
-  const academicUrl =
-    /(?:^|\/\/)(?:arxiv\.org|openreview\.net|aclanthology\.org|proceedings\.)/i.test(
-      researchUrl,
-    );
-  const explicitResearchTitle =
-    /\b(?:paper|study|research(?:ers?)?|theorem)\b/i.test(candidate.title);
-  const researchQualified =
-    researchIndexed || academicUrl || explicitResearchTitle;
-  const indexedAcademicResearch = researchIndexed && academicUrl;
   const executive = signalScore(text, EXECUTIVE_SIGNALS);
   const technical = signalScore(text, TECHNICAL_SIGNALS);
-  const research = signalScore(text, RESEARCH_SIGNALS);
+  const builder = signalScore(text, BUILDER_SIGNALS);
+  const attributionRoles = new Set(
+    (candidate.sourceAttributions ?? []).map(({ sourceRole }) => sourceRole),
+  );
+  const builderSource =
+    attributionRoles.has("official-builder") ||
+    attributionRoles.has("official-ecosystem") ||
+    attributionRoles.has("practitioner-signal");
+  const builderQualified =
+    BUILDER_SUBJECT_PATTERN.test(text) &&
+    (BUILDER_AVAILABILITY_PATTERN.test(text) || builderSource);
+  const deepTechnical =
+    technical.score >= 1.4 &&
+    /\b(architecture|training|fine[- ]tun(?:e|ing)|inference|latency|throughput|token|context window|benchmark|evaluation|database|algorithm|quantization|compiler|kernel)\b/i.test(
+      text,
+    );
 
   let lane = "executive";
-  if (indexedAcademicResearch) {
-    lane = "research";
-  } else if (
-    researchQualified &&
-    research.score >= 2 &&
-    research.score >= technical.score + 0.5 &&
-    research.score >= executive.score + 0.5
+  if (
+    builderQualified &&
+    builder.score >= 1.9 &&
+    (!deepTechnical || builder.score >= technical.score)
   ) {
-    lane = "research";
+    lane = "builder";
   } else if (
-    technical.score >= 1.4 &&
-    technical.score >= executive.score + 0.6 &&
-    technical.score >= research.score
+    deepTechnical &&
+    technical.score >= executive.score + 0.3
   ) {
     lane = "technical";
   } else if (executive.score >= 1.3) {
     lane = "executive";
+  } else if (builderQualified && builder.score >= 1.2) {
+    lane = "builder";
   } else if (technical.score >= 1) {
     lane = "technical";
-  } else if (researchQualified && research.score >= 1.2) {
-    lane = "research";
   } else if (
     technical.score > 0 ||
-    /\b(engineering|builder|developer)\b/i.test(candidate.section ?? "")
+    /\b(engineering|technical)\b/i.test(candidate.section ?? "")
   ) {
     lane = "technical";
+  } else if (
+    builder.score > 0 ||
+    /\b(builder|developer)\b/i.test(candidate.section ?? "")
+  ) {
+    lane = "builder";
   }
 
-  const attributionRoles = new Set(
-    (candidate.sourceAttributions ?? []).map(({ sourceRole }) => sourceRole),
-  );
   const communityLaunchOnly =
     attributionRoles.size === 1 &&
     attributionRoles.has("community-signal") &&
     /^(?:Launch|Show) HN:/i.test(candidate.title);
   if (communityLaunchOnly && lane === "executive") {
-    lane = "technical";
+    lane = builderQualified ? "builder" : "technical";
   }
 
   return {
@@ -452,12 +468,12 @@ export function classifyLane(candidate) {
     signals: {
       executive: Number(executive.score.toFixed(2)),
       technical: Number(technical.score.toFixed(2)),
-      research: Number(research.score.toFixed(2)),
+      builder: Number(builder.score.toFixed(2)),
     },
     labels: {
       executive: executive.labels,
       technical: technical.labels,
-      research: research.labels,
+      builder: builder.labels,
     },
   };
 }
@@ -471,12 +487,19 @@ export function scoreCandidate(candidate, config, asOf) {
       candidate.sourceAttributions.map(({ sourceRole }) => sourceRole),
     ),
   ];
+  const discoveryRoles = [
+    ...new Set(
+      candidate.sourceAttributions
+        .filter((attribution) => attributionKind(attribution) !== "primary")
+        .map(({ sourceRole }) => sourceRole),
+    ),
+  ];
   const discoveryWeights =
     config.sourceSignals?.discoveryWeight ?? config.sourcePriority ?? {};
   const evidenceWeights = config.sourceSignals?.evidenceAuthority ?? {};
   const discoveryWeight = Math.max(
     0,
-    ...sourceRoles.map(
+    ...discoveryRoles.map(
       (role) =>
         discoveryWeights[role] ??
         discoveryWeights["diverse-newsletter"] ??
@@ -488,23 +511,22 @@ export function scoreCandidate(candidate, config, asOf) {
     0,
     ...sourceRoles.map((role) => evidenceWeights[role] ?? 0.5),
   );
-  const recencyDate =
-    classification.lane === "research"
-      ? candidate.paperMetadata?.submittedAt ?? candidate.publishedAt
-      : candidate.publishedAt;
+  const recencyDate = candidate.publishedAt;
   const ageDays = Math.max(
     0,
     (new Date(asOf).valueOf() - new Date(recencyDate).valueOf()) /
       DAY_MS,
   );
-  const recencyDecay = classification.lane === "research" ? 0.2 : 0.35;
+  const recencyDecay = 0.35;
   const recencyScore = Math.max(0, 3 - ageDays * recencyDecay);
   const section = candidate.section?.toLocaleLowerCase() ?? "";
   const sectionScore = section.includes("headlines")
     ? 1.3
     : section.includes("deep dive") || section.includes("analysis")
       ? 1.1
-      : section.includes("engineering") || section.includes("research")
+      : section.includes("engineering") ||
+          section.includes("research") ||
+          section.includes("builder")
         ? 0.8
         : section.includes("quick")
           ? 0.25
@@ -514,7 +536,7 @@ export function scoreCandidate(candidate, config, asOf) {
       ? 1.2
       : classification.lane === "technical"
         ? 0.5
-        : 0.2;
+        : 0.7;
   const laneSignal = classification.signals[classification.lane];
   const crossDiscoveryBonus =
     Math.max(0, discoverySourceCount - 1) * 1.25;
@@ -551,24 +573,6 @@ export function scoreCandidate(candidate, config, asOf) {
               0.2,
         )
       : 0;
-  const researchAttention =
-    sourceRoles.includes("research-index") && candidate.engagement
-      ? Math.min(
-          1,
-          Math.log10(Math.max(0, candidate.engagement.upvotes ?? 0) + 1) * 0.45,
-        )
-      : 0;
-  const researchConsequence =
-    classification.lane === "research"
-      ? RESEARCH_CONSEQUENCE_SIGNALS.reduce(
-          (total, { pattern, weight }) =>
-            total +
-            (pattern.test(`${candidate.title} ${candidate.editorialText}`)
-              ? weight
-              : 0),
-          0,
-        )
-      : 0;
   const communityLaunchPenalty =
     candidate.discoverySourceCount === 1 &&
     sourceRoles.includes("community-signal") &&
@@ -589,8 +593,6 @@ export function scoreCandidate(candidate, config, asOf) {
     laneSignal +
     crossDiscoveryBonus +
     communityEngagement +
-    researchAttention +
-    researchConsequence +
     xSignalBonus -
     Math.min(1.05, hypePenalty) -
     officialNoisePenalty -
@@ -609,10 +611,6 @@ export function scoreCandidate(candidate, config, asOf) {
   }
   if (evidenceAuthority >= 0.9) reasons.push("primary-source evidence");
   if (communityEngagement >= 1) reasons.push("strong community attention");
-  if (researchAttention >= 0.6) reasons.push("research-community attention");
-  if (researchConsequence >= 1.2) {
-    reasons.push("high-consequence research topic");
-  }
   if (isXSource) reasons.push("originated on X");
   if (hypePenalty > 0) reasons.push("promotional-language penalty applied");
   if (officialNoisePenalty > 0) {
@@ -774,6 +772,9 @@ export function selectEditorialMix(
   mix,
   {
     maxUncorroboratedOfficialItemsPerVendor = Number.POSITIVE_INFINITY,
+    modelLabVendors = [],
+    maxModelLabItems = Number.POSITIVE_INFINITY,
+    maxModelLabItemsPerVendor = Number.POSITIVE_INFINITY,
     maxSoleDiscoveryItemsBySource = {},
     maxSoleDiscoveryItemsBySourcePerLane = {},
     preserveEditorialMix = false,
@@ -783,10 +784,27 @@ export function selectEditorialMix(
   const selected = [];
   const selectedIds = new Set();
   const guardedVendorCounts = new Map();
+  const modelLabVendorSet = new Set(modelLabVendors);
+  const modelLabVendorCounts = new Map();
+  let modelLabItems = 0;
   const soleDiscoveryCounts = new Map();
   const soleDiscoveryLaneCounts = new Map();
 
+  function respectsModelLabLimits(candidate) {
+    const vendors = identifyModelLabVendors(candidate, modelLabVendorSet);
+    if (vendors.length === 0) return true;
+    return (
+      modelLabItems < maxModelLabItems &&
+      vendors.every(
+        (vendor) =>
+          (modelLabVendorCounts.get(vendor) ?? 0) <
+          maxModelLabItemsPerVendor,
+      )
+    );
+  }
+
   function canSelect(candidate) {
+    if (!respectsModelLabLimits(candidate)) return false;
     const vendor = guardedVendor(candidate);
     if (
       vendor &&
@@ -822,6 +840,19 @@ export function selectEditorialMix(
         vendor,
         (guardedVendorCounts.get(vendor) ?? 0) + 1,
       );
+    }
+    const candidateModelLabVendors = identifyModelLabVendors(
+      candidate,
+      modelLabVendorSet,
+    );
+    if (candidateModelLabVendors.length > 0) {
+      modelLabItems += 1;
+      for (const vendor of candidateModelLabVendors) {
+        modelLabVendorCounts.set(
+          vendor,
+          (modelLabVendorCounts.get(vendor) ?? 0) + 1,
+        );
+      }
     }
     const sourceId = soleDiscoverySource(candidate);
     if (sourceId) {
@@ -860,12 +891,14 @@ export function selectEditorialMix(
         .filter(
           (candidate) =>
             candidate.editorialLane === lane &&
-            !selectedIds.has(candidate.id),
+            !selectedIds.has(candidate.id) &&
+            respectsModelLabLimits(candidate),
         )
         .sort((left, right) => right.score - left.score);
 
       for (const candidate of blockedInLane) {
         if (laneCount >= quotas[lane]) break;
+        if (!respectsModelLabLimits(candidate)) continue;
         addCandidate({
           ...candidate,
           flags: {
@@ -902,11 +935,16 @@ export function selectEditorialMix(
 
   if (selected.length < maxItems) {
     const blocked = candidates
-      .filter((candidate) => !selectedIds.has(candidate.id))
+      .filter(
+        (candidate) =>
+          !selectedIds.has(candidate.id) &&
+          respectsModelLabLimits(candidate),
+      )
       .sort((left, right) => right.score - left.score);
 
     for (const candidate of blocked) {
       if (selected.length >= maxItems) break;
+      if (!respectsModelLabLimits(candidate)) continue;
       addCandidate({
         ...candidate,
         flags: {

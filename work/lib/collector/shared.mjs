@@ -47,9 +47,12 @@ export function canonicalizeUrl(value, base) {
   url.hostname = url.hostname.toLocaleLowerCase();
 
   for (const key of [...url.searchParams.keys()]) {
+    const normalizedKey = key
+      .toLocaleLowerCase()
+      .replace(/^(?:amp;)+/, "");
     if (
-      key.toLocaleLowerCase().startsWith("utm_") ||
-      TRACKING_PARAMETERS.has(key.toLocaleLowerCase())
+      normalizedKey.startsWith("utm_") ||
+      TRACKING_PARAMETERS.has(normalizedKey)
     ) {
       url.searchParams.delete(key);
     }

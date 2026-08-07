@@ -18,7 +18,10 @@ import {
   isoWeekKey,
   parseHuggingFacePapers,
 } from "../../lib/collector/huggingface.mjs";
-import { parseOfficialFeed } from "../../lib/collector/official-rss.mjs";
+import {
+  collectOfficialRss,
+  parseOfficialFeed,
+} from "../../lib/collector/official-rss.mjs";
 import {
   parseTldrFeed,
   parseTldrIssue,
@@ -45,7 +48,7 @@ test("extracts TLDR stories while removing sponsors and house promotion", async 
     publishedAt: "2026-07-22T00:00:00.000Z",
   });
 
-  assert.equal(stories.length, 5);
+  assert.equal(stories.length, 8);
   assert.equal(
     stories[0].url,
     "https://example.com/enterprise-agents?id=42",
@@ -93,6 +96,22 @@ test("enriches AlphaSignal metadata and prefers independent evidence links", asy
     "https://openai.com/example/spend-limits",
     "https://x.com/OpenAIDevs/status/123",
   ]);
+});
+
+test("ranks AlphaSignal article evidence above an unrelated page card", () => {
+  const article = parseAlphaArticle(
+    `<!doctype html><main>
+      <h1>Ai2 and Hugging Face Expand Partnership, Unlocking 2 Petabytes for Open AI</h1>
+      <a href="https://huggingface.co/spaces/example/model-release-heatmap">Ai2 and Hugging Face Expand Partnership, Unlocking 2 Petabytes for Open AI</a>
+      <p><a href="https://allenai.org/blog/hugging-face-partnership">The Allen Institute for AI and Hugging Face partnership</a></p>
+    </main>`,
+    "https://alphasignal.ai/news/ai2-and-hugging-face-expand-partnership",
+  );
+
+  assert.equal(
+    article.externalUrls[0],
+    "https://allenai.org/blog/hugging-face-partnership",
+  );
 });
 
 test("keeps the AlphaSignal article as the citation when evidence is only a generic homepage", async () => {
@@ -144,6 +163,45 @@ test("parses structured official RSS metadata", async () => {
   });
 });
 
+test("extracts escaped HTML from Atom summary objects", async () => {
+  const items = parseOfficialFeed(await fixture("coding-agents.atom"));
+
+  assert.equal(items.length, 1);
+  assert.equal(
+    items[0].description,
+    "Muse Code is a coding-agent harness with tool calling and project workflows.",
+  );
+  assert.deepEqual(items[0].categories, ["coding-agents", "ai"]);
+});
+
+test("keeps a broad InfoQ feed scoped to AI and agent news", async () => {
+  const source = {
+    id: "infoq-ai-ml-news",
+    name: "InfoQ AI/ML News",
+    role: "independent-publication",
+    kind: "discovery",
+    feedUrl: "https://feed.infoq.com/ai-ml-data-eng/news/",
+    requireContentPatterns: [
+      "\\bAI\\b",
+      "artificial intelligence",
+      "\\bagents?\\b",
+      "\\bMCP\\b",
+    ],
+  };
+  const { candidates, health } = await collectOfficialRss({
+    source,
+    asOf: new Date("2026-08-07T00:00:00.000Z"),
+    lookbackDays: 7,
+    fetchText: async () => ({
+      text: await fixture("infoq-news.xml"),
+    }),
+  });
+
+  assert.equal(health.fetchedItems, 2);
+  assert.equal(health.acceptedCandidates, 1);
+  assert.equal(candidates[0].title, "Vercel launches an agent platform for production workflows");
+});
+
 test("uses Anthropic newsroom dates and article metadata instead of sitemap edits", async () => {
   const entries = parseAnthropicNewsroom(
     await fixture("anthropic-news.html"),
@@ -172,6 +230,14 @@ test("filters Hacker News with token-aware AI relevance", async () => {
   assert.equal(response.hits.length, 3);
   assert.equal(isAiRelevantHackerNewsStory(response.hits[0]), true);
   assert.equal(isAiRelevantHackerNewsStory(response.hits[1]), false);
+  assert.equal(
+    isAiRelevantHackerNewsStory({
+      title: "My favourite links from the last decade",
+      story_text: "One item in a long list happens to mention AI agents.",
+      url: "https://example.com/favourite-links",
+    }),
+    false,
+  );
 });
 
 test("parses Hugging Face paper dates and ISO week keys", async () => {

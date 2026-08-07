@@ -9,12 +9,15 @@ export const BRIEFING_PROFILES = Object.freeze({
     editorialMix: Object.freeze({
       executive: 0.6,
       technical: 0.2,
-      research: 0.2,
+      builder: 0.2,
     }),
     expectedMix: Object.freeze({
       executive: 3,
       technical: 1,
-      research: 1,
+      builder: 1,
+    }),
+    selectionRules: Object.freeze({
+      maxModelLabItems: 2,
     }),
     retainedRuns: 7,
     emailEnabled: true,
@@ -27,12 +30,15 @@ export const BRIEFING_PROFILES = Object.freeze({
     editorialMix: Object.freeze({
       executive: 0.7,
       technical: 0.2,
-      research: 0.1,
+      builder: 0.1,
     }),
     expectedMix: Object.freeze({
       executive: 7,
       technical: 2,
-      research: 1,
+      builder: 1,
+    }),
+    selectionRules: Object.freeze({
+      maxModelLabItems: 3,
     }),
     retainedRuns: 3,
     emailEnabled: false,

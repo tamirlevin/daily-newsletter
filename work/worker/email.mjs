@@ -1,6 +1,7 @@
 const LANE_LABELS = Object.freeze({
   executive: "Executive signal",
-  technical: "For builders",
+  technical: "Technical signal",
+  builder: "Builder signal",
   research: "Research watch",
 });
 
@@ -13,7 +14,7 @@ const COLOURS = Object.freeze({
   accent: "#c95d3f",
 });
 
-const LANE_ORDER = ["executive", "technical", "research"];
+const LANE_ORDER = ["executive", "technical", "builder", "research"];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -135,7 +136,7 @@ export function renderDailyEmail(run, publicBaseUrl) {
                     Five AI developments worth your attention
                   </h1>
                   <p style="margin:0;font:400 13px/1.45 Arial,sans-serif;color:${COLOURS.muted}">
-                    ${escapeHtml(issueLabel)} · Ranked for decisions, builders, and research direction.
+                    ${escapeHtml(issueLabel)} · Ranked for decisions, technical depth, and builder action.
                   </p>
                 </div>
               </td>

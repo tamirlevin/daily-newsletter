@@ -376,6 +376,7 @@ summary:focus-visible {
   color: var(--ink);
 }
 
+.brief-section--builder .section-heading,
 .brief-section--research .section-heading {
   color: var(--jade);
 }
@@ -671,6 +672,7 @@ summary:focus-visible {
   background: var(--ink);
 }
 
+.lane-dot--builder,
 .lane-dot--research {
   background: var(--jade);
 }

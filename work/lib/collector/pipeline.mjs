@@ -244,6 +244,10 @@ export async function collectBrief({
   const resolvedLookbackDays = lookbackDays ?? cadenceProfile.lookbackDays;
   const resolvedMaxItems = maxItems ?? cadenceProfile.maxItems;
   const editorialMix = cadenceProfile.editorialMix;
+  const selectionRules = {
+    ...config.selectionRules,
+    ...cadenceProfile.selectionRules,
+  };
   validatePolicy({
     ...config,
     editorialMix,
@@ -311,7 +315,7 @@ export async function collectBrief({
     preliminary,
     enrichmentPoolSize,
     editorialMix,
-    config.selectionRules,
+    selectionRules,
   );
   const enriched = await mapWithConcurrency(
     enrichmentPool,
@@ -329,7 +333,7 @@ export async function collectBrief({
     resolvedMaxItems,
     editorialMix,
     {
-      ...config.selectionRules,
+      ...selectionRules,
       preserveEditorialMix: true,
     },
   );
@@ -465,9 +469,9 @@ export async function collectBrief({
       targetMix: editorialMix,
       selectedMix: countEditorialMix(selectedWithSummaries),
       sourceSignals: config.sourceSignals,
-      selectionRules: config.selectionRules,
+      selectionRules,
       note:
-        "Newsletters, Hacker News, and Hugging Face are discovery signals. Official lab sources are primary evidence, not independent corroboration. Published copy must be written independently.",
+        "Newsletters, InfoQ, Simon Willison, and Hacker News provide independent discovery. Cloudflare Agents, the MCP project, and official lab sources provide primary evidence, not independent corroboration. Published copy must be written independently.",
       directXCoverage: {
         capturedFromConfiguredSources:
           healthReport.totals.directXLinksInRawCandidates,

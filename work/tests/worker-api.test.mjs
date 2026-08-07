@@ -323,6 +323,7 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     assert.deepEqual(message.to, ["reader@example.com"]);
     assert.match(message.subject, /AI Daily Brief/);
     assert.match(message.html, /Five AI developments worth your attention/);
+    assert.match(message.html, /Builder signal/);
     assert.match(message.html, /Google Research examines how artificial intelligence/);
     assert.match(message.html, new RegExp(linkOnlyStory.title));
     assert.doesNotMatch(message.html, new RegExp(omittedSummary));
@@ -332,6 +333,7 @@ test("sends one email only after a Daily run is accepted", async (t) => {
     assert.doesNotMatch(message.html, /Georgia,serif/);
     assert.match(message.html, /font:700 17px\/1\.3 Arial,sans-serif/);
     assert.match(message.text, /Google Research examines how artificial intelligence/);
+    assert.match(message.text, /Builder signal/);
     assert.match(message.text, new RegExp(linkOnlyStory.title));
     assert.doesNotMatch(message.text, new RegExp(omittedSummary));
     return new Response(JSON.stringify({ id: "email_123" }), {

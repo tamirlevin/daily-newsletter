@@ -5,6 +5,11 @@ import {
   runIdFor,
 } from "../lib/briefing-profiles.mjs";
 import { validateBriefSummary } from "../lib/brief-summary.mjs";
+import {
+  identifyModelLabVendors,
+  MAX_MODEL_LAB_ITEMS_PER_VENDOR,
+  MODEL_LAB_VENDORS,
+} from "../lib/model-labs.mjs";
 
 export const RETAINED_RUNS_BY_CADENCE = Object.freeze(
   Object.fromEntries(
@@ -24,7 +29,14 @@ export const EXPECTED_MIX_BY_CADENCE = Object.freeze(
   ),
 );
 
-const ALLOWED_LANES = new Set(["executive", "technical", "research"]);
+const ACTIVE_LANES = Object.freeze([
+  ...new Set(
+    Object.values(BRIEFING_PROFILES).flatMap((profile) =>
+      Object.keys(profile.expectedMix),
+    ),
+  ),
+]);
+const ALLOWED_LANES = new Set(ACTIVE_LANES);
 
 function requiredText(value, field) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -119,7 +131,9 @@ export function validatePublicationRun(payload) {
 
   const itemIds = new Set();
   const itemUrls = new Set();
-  const mix = { executive: 0, technical: 0, research: 0 };
+  const mix = Object.fromEntries(ACTIVE_LANES.map((lane) => [lane, 0]));
+  const modelLabVendorCounts = new Map();
+  let modelLabItems = 0;
 
   for (const [index, item] of payload.items.entries()) {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
@@ -181,6 +195,20 @@ export function validatePublicationRun(payload) {
     if (item.flags?.promotionalLanguage === true) {
       throw new Error(`items[${index}] contains promotional language`);
     }
+
+    const modelLabVendors = identifyModelLabVendors(
+      item,
+      MODEL_LAB_VENDORS,
+    );
+    if (modelLabVendors.length > 0) {
+      modelLabItems += 1;
+      for (const vendor of modelLabVendors) {
+        modelLabVendorCounts.set(
+          vendor,
+          (modelLabVendorCounts.get(vendor) ?? 0) + 1,
+        );
+      }
+    }
   }
 
   for (const [lane, expected] of Object.entries(profile.expectedMix)) {
@@ -189,6 +217,19 @@ export function validatePublicationRun(payload) {
         `Editorial mix must contain ${expected} ${lane} stories`,
       );
     }
+  }
+
+  for (const [vendor, count] of modelLabVendorCounts) {
+    if (count > MAX_MODEL_LAB_ITEMS_PER_VENDOR) {
+      throw new Error(
+        `A run may contain at most ${MAX_MODEL_LAB_ITEMS_PER_VENDOR} story from model lab ${vendor}`,
+      );
+    }
+  }
+  if (modelLabItems > profile.selectionRules.maxModelLabItems) {
+    throw new Error(
+      `A ${cadence} run may contain at most ${profile.selectionRules.maxModelLabItems} model-lab stories`,
+    );
   }
 
   return {

@@ -17,18 +17,72 @@ const xmlParser = new XMLParser({
 
 const EXCLUDED_EXTERNAL_HOSTS = new Set([
   "alphasignal.ai",
+  "calendly.com",
+  "forms.gle",
+  "tally.so",
   "www.alphasignal.ai",
   "www.googletagmanager.com",
   "googletagmanager.com",
 ]);
+
+function isNonEvidenceHost(hostname) {
+  const host = hostname.toLocaleLowerCase();
+  return (
+    EXCLUDED_EXTERNAL_HOSTS.has(host) ||
+    host === "typeform.com" ||
+    host.endsWith(".typeform.com")
+  );
+}
 
 function isAlphaSocialProfile(url) {
   const host = url.hostname.toLocaleLowerCase();
   const path = url.pathname.toLocaleLowerCase();
   return (
     ((host === "x.com" || host === "twitter.com") &&
-      path.includes("alphasignal")) ||
-    (host.endsWith("linkedin.com") && path.includes("alphasignal"))
+      (path.includes("alphasignal") || path.startsWith("/intent/"))) ||
+    (host.endsWith("linkedin.com") &&
+      (path.includes("alphasignal") || path.startsWith("/sharing/")))
+  );
+}
+
+function evidenceTokens(value) {
+  return new Set(
+    normalizeWhitespace(value)
+      .toLocaleLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .filter((token) => token.length > 2),
+  );
+}
+
+function evidenceRelevance(title, anchorText, value) {
+  const titleTokens = evidenceTokens(title);
+  let urlText = "";
+  let pathBonus = 0;
+  try {
+    const url = new URL(value);
+    urlText = `${url.hostname} ${decodeURIComponent(url.pathname)}`;
+    if (
+      /\/(?:article|articles|blog|changelog|news|post|posts|press|research)(?:\/|$)/i.test(
+        url.pathname,
+      )
+    ) {
+      pathBonus += 4;
+    }
+    if (
+      url.hostname.toLocaleLowerCase().replace(/^www\./, "") ===
+        "huggingface.co" &&
+      url.pathname.toLocaleLowerCase().startsWith("/spaces/")
+    ) {
+      pathBonus -= 8;
+    }
+  } catch {
+    // Invalid URLs are filtered before this scorer runs.
+  }
+  const linkTokens = evidenceTokens(`${anchorText} ${urlText}`);
+  return (
+    [...titleTokens].filter((token) => linkTokens.has(token)).length +
+    pathBonus
   );
 }
 
@@ -75,7 +129,7 @@ export function parseAlphaArticle(html, articleUrl) {
       $('meta[property="og:description"]').attr("content") ??
       "",
   );
-  const externalUrls = [];
+  const externalLinks = new Map();
 
   $("main a[href], article a[href], body a[href]").each((_, element) => {
     const value = canonicalizeUrl($(element).attr("href"), articleUrl);
@@ -83,15 +137,36 @@ export function parseAlphaArticle(html, articleUrl) {
 
     const url = new URL(value);
     if (
-      EXCLUDED_EXTERNAL_HOSTS.has(url.hostname.toLocaleLowerCase()) ||
+      isNonEvidenceHost(url.hostname) ||
       isAlphaSocialProfile(url) ||
       /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(url.pathname)
     ) {
       return;
     }
 
-    if (!externalUrls.includes(value)) externalUrls.push(value);
+    const anchorText = normalizeWhitespace($(element).text());
+    const existing = externalLinks.get(value);
+    if (existing) {
+      existing.anchorText = normalizeWhitespace(
+        `${existing.anchorText} ${anchorText}`,
+      );
+      return;
+    }
+    externalLinks.set(value, {
+      url: value,
+      anchorText,
+      index: externalLinks.size,
+    });
   });
+
+  const externalUrls = [...externalLinks.values()]
+    .sort(
+      (left, right) =>
+        evidenceRelevance(title, right.anchorText, right.url) -
+          evidenceRelevance(title, left.anchorText, left.url) ||
+        left.index - right.index,
+    )
+    .map(({ url }) => url);
 
   return {
     title,

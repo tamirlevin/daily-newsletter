@@ -53,6 +53,12 @@ test("canonicalizes tracking parameters without removing functional parameters",
     ),
     "https://example.com/story?id=42",
   );
+  assert.equal(
+    canonicalizeUrl(
+      "https://example.com/story?amp;utm_source=infoq&amp;utm_medium=feed",
+    ),
+    "https://example.com/story",
+  );
 });
 
 test("identifies sponsored and house-promotional newsletter entries", () => {
@@ -116,6 +122,24 @@ test("merges exact and fuzzy duplicates across discovery newsletters", () => {
 
   assert.equal(fuzzy.length, 1);
   assert.equal(fuzzy[0].url, "https://openai.com/announcement");
+
+  const acquisition = dedupeCandidates([
+    candidate({
+      title: "AMD acquires Taalas to build chips for one AI model",
+      url: "https://example.com/amd-taalas",
+      sourceId: "alphasignal",
+      sourceName: "AlphaSignal",
+      sourceUrl: "https://alphasignal.ai/news/amd-acquires-taalas",
+    }),
+    candidate({
+      title: "AMD acquires Taalas to boost inference performance",
+      url: "https://example.net/taalas-acquisition",
+      sourceId: "hacker-news",
+      sourceName: "Hacker News",
+      sourceUrl: "https://news.ycombinator.com/item?id=42",
+    }),
+  ]);
+  assert.equal(acquisition.length, 1);
 });
 
 test("separates discovery coverage from primary-source evidence", () => {
@@ -180,6 +204,44 @@ test("separates discovery coverage from primary-source evidence", () => {
       reason.includes("2 discovery"),
     ),
   );
+});
+
+test("does not treat a primary-only feed as independent discovery", () => {
+  const [prepared] = dedupeCandidates([
+    {
+      title: "OpenAI launches a new enterprise agent control",
+      url: "https://openai.com/example/agent-control",
+      publishedAt: "2026-07-22T00:00:00.000Z",
+      section: "Product",
+      editorialText: "A primary product announcement for enterprise teams.",
+      sourceRole: "official-lab",
+      sourceKind: "primary",
+      vendor: "openai",
+      sourceAttributions: [
+        {
+          sourceId: "openai-news",
+          sourceName: "OpenAI News",
+          sourceRole: "official-lab",
+          sourceKind: "primary",
+          sourceUrl: "https://openai.com/example/agent-control",
+          vendor: "openai",
+        },
+      ],
+    },
+  ]);
+  const scored = scoreCandidate(
+    prepared,
+    {
+      sourceSignals: {
+        discoveryWeight: { "official-lab": 0.3 },
+        evidenceAuthority: { "official-lab": 1 },
+      },
+    },
+    new Date("2026-07-23T00:00:00.000Z"),
+  );
+
+  assert.equal(scored.sourceSignals.discoveryWeight, 0);
+  assert.equal(scored.sourceSignals.evidenceAuthority, 1);
 });
 
 test("flags newsletter stories that still lack a specific underlying source", () => {
@@ -251,14 +313,14 @@ test("treats the underlying paper URL as primary research evidence", () => {
   assert.ok(scored.selectionReasons.includes("primary-source evidence"));
 });
 
-test("enforces the 70/20/10 editorial allocation for a ten-item brief", () => {
+test("enforces the 70/20/10 executive, technical, and builder allocation", () => {
   assert.deepEqual(
     computeMixQuotas(10, {
       executive: 0.7,
       technical: 0.2,
-      research: 0.1,
+      builder: 0.1,
     }),
-    { executive: 7, technical: 2, research: 1 },
+    { executive: 7, technical: 2, builder: 1 },
   );
 
   const candidates = [
@@ -273,15 +335,15 @@ test("enforces the 70/20/10 editorial allocation for a ten-item brief", () => {
       score: 80 - index,
     })),
     ...Array.from({ length: 3 }, (_, index) => ({
-      id: `research-${index}`,
-      editorialLane: "research",
+      id: `builder-${index}`,
+      editorialLane: "builder",
       score: 60 - index,
     })),
   ];
   const selected = selectEditorialMix(candidates, 10, {
     executive: 0.7,
     technical: 0.2,
-    research: 0.1,
+    builder: 0.1,
   });
 
   assert.deepEqual(
@@ -290,9 +352,9 @@ test("enforces the 70/20/10 editorial allocation for a ten-item brief", () => {
         ...counts,
         [item.editorialLane]: counts[item.editorialLane] + 1,
       }),
-      { executive: 0, technical: 0, research: 0 },
+      { executive: 0, technical: 0, builder: 0 },
     ),
-    { executive: 7, technical: 2, research: 1 },
+    { executive: 7, technical: 2, builder: 1 },
   );
 });
 
@@ -333,7 +395,7 @@ test("caps uncorroborated official items from one vendor", () => {
       },
     ],
     3,
-    { executive: 1, technical: 0, research: 0 },
+    { executive: 1, technical: 0, builder: 0 },
     { maxUncorroboratedOfficialItemsPerVendor: 1 },
   );
 
@@ -341,6 +403,48 @@ test("caps uncorroborated official items from one vendor", () => {
     selected.map(({ id }) => id),
     ["openai-1", "google-1", "community-1"],
   );
+});
+
+test("keeps model-lab diversity limits hard even for discovered stories", () => {
+  const labCandidate = (id, vendor, score, title = id) => ({
+    id,
+    title,
+    editorialLane: "executive",
+    score,
+    vendor,
+    discoverySourceCount: 1,
+    primarySourceCount: 1,
+    sourceAttributions: [
+      {
+        sourceId: "tldr-ai",
+        sourceRole: "diverse-newsletter",
+        sourceKind: "discovery",
+      },
+    ],
+  });
+  const selected = selectEditorialMix(
+    [
+      labCandidate("openai-1", "openai", 100),
+      labCandidate("openai-2", null, 99, "OpenAI expands ChatGPT agents"),
+      labCandidate("anthropic-1", "anthropic", 98),
+      labCandidate("google-1", "google", 97),
+      labCandidate("google-2", "google", 96),
+    ],
+    5,
+    { executive: 1, technical: 0, builder: 0 },
+    {
+      modelLabVendors: ["openai", "anthropic", "google"],
+      maxModelLabItems: 2,
+      maxModelLabItemsPerVendor: 1,
+      preserveEditorialMix: true,
+    },
+  );
+
+  assert.deepEqual(
+    selected.map(({ id }) => id),
+    ["openai-1", "anthropic-1"],
+  );
+  assert.equal(selected.some((item) => item.flags?.selectionGuardrailRelaxed), false);
 });
 
 test("caps stories found only through one community source", () => {
@@ -381,7 +485,7 @@ test("caps stories found only through one community source", () => {
       newsletterCandidate("newsletter-2", 97),
     ],
     3,
-    { executive: 1, technical: 0, research: 0 },
+    { executive: 1, technical: 0, builder: 0 },
     {
       maxSoleDiscoveryItemsBySource: { "hacker-news": 3 },
       maxSoleDiscoveryItemsBySourcePerLane: { "hacker-news": 1 },
@@ -394,48 +498,49 @@ test("caps stories found only through one community source", () => {
   );
 });
 
-test("reserves the research lane for explicit papers, studies, or benchmarks", () => {
-  const analysis = classifyLane({
-    title: "Agent swarms and the new model economics",
-    url: "https://example.com/agent-swarms",
-    section: "Engineering & Research",
+test("separates practical builder launches from technical and executive news", () => {
+  const builder = classifyLane({
+    title: "Cloudflare releases an Agents SDK with durable workflows",
+    url: "https://blog.cloudflare.com/example-agents-sdk",
+    section: "Agents",
     editorialText:
-      "A research-oriented analysis of agent workflows and model economics.",
-  });
-  const paper = classifyLane({
-    title: "New paper benchmarks long-horizon agent reliability",
-    url: "https://arxiv.org/abs/2607.12345",
-    section: "Engineering & Research",
-    editorialText:
-      "Researchers publish a benchmark dataset and evaluation study.",
-  });
-  const benchmarkProduct = classifyLane({
-    title: "Can a MUD evaluate LLMs? A $99 proof of concept",
-    url: "https://cruciblebench.ai/",
-    section: "Hacker News",
-    editorialText: "A hosted benchmark product for language models.",
+      "The open-source SDK is available now with MCP tools, sandboxes, and orchestration.",
     sourceAttributions: [
       {
-        sourceId: "hacker-news",
-        sourceRole: "community-signal",
-        sourceKind: "discovery",
+        sourceId: "cloudflare-agents",
+        sourceRole: "official-builder",
+        sourceKind: "primary",
       },
     ],
   });
+  const technical = classifyLane({
+    title: "A new inference architecture reduces agent latency",
+    url: "https://example.com/inference-architecture",
+    section: "Engineering",
+    editorialText:
+      "The implementation changes token throughput, quantization, and benchmark performance.",
+  });
+  const executive = classifyLane({
+    title: "MCP adoption reshapes enterprise software distribution",
+    url: "https://example.com/mcp-adoption",
+    section: "Analysis",
+    editorialText:
+      "Companies are changing platform strategy, governance, and operating workflows as the protocol becomes a standard.",
+  });
 
-  assert.notEqual(analysis.lane, "research");
-  assert.equal(paper.lane, "research");
-  assert.notEqual(benchmarkProduct.lane, "research");
+  assert.equal(builder.lane, "builder");
+  assert.equal(technical.lane, "technical");
+  assert.equal(executive.lane, "executive");
 });
 
-test("keeps indexed academic papers in the research lane despite executive keywords", () => {
+test("does not reserve a lane for indexed academic papers", () => {
   const paper = classifyLane({
     title:
       "Molt: A Scalable PyTorch-Native Training Framework for Agentic Reinforcement Learning",
     url: "https://arxiv.org/abs/2607.21653",
     section: "Research Watch",
     editorialText:
-      "A scalable framework for agentic reinforcement learning, security, cost, and deployment. Research paper benchmark study.",
+      "A research paper benchmarks training throughput, inference latency, quantization, and algorithm performance.",
     sourceAttributions: [
       {
         sourceId: "huggingface-papers",
@@ -445,7 +550,8 @@ test("keeps indexed academic papers in the research lane despite executive keywo
     ],
   });
 
-  assert.equal(paper.lane, "research");
+  assert.equal(paper.lane, "technical");
+  assert.notEqual(paper.lane, "builder");
 });
 
 test("filters candidates that the publication gate cannot accept", () => {
@@ -503,7 +609,7 @@ test("preserves exact lane quotas instead of filling from another lane", () => {
   const selected = selectEditorialMix(
     candidates,
     5,
-    { executive: 0.6, technical: 0.2, research: 0.2 },
+    { executive: 0.6, technical: 0.2, builder: 0.2 },
     { preserveEditorialMix: true },
   );
 
@@ -513,9 +619,9 @@ test("preserves exact lane quotas instead of filling from another lane", () => {
         ...counts,
         [item.editorialLane]: counts[item.editorialLane] + 1,
       }),
-      { executive: 0, technical: 0, research: 0 },
+      { executive: 0, technical: 0, builder: 0 },
     ),
-    { executive: 3, technical: 1, research: 0 },
+    { executive: 3, technical: 1, builder: 0 },
   );
   assert.equal(selected.length, 4);
 });

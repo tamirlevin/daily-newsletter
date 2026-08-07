@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Simon Willison: coding agents</title>
+  <entry>
+    <title>Introducing Muse Code</title>
+    <link rel="alternate" href="https://simonwillison.net/2026/Aug/5/muse-code/" />
+    <published>2026-08-05T10:00:00Z</published>
+    <updated>2026-08-05T10:00:00Z</updated>
+    <summary type="html">&lt;p&gt;Muse Code is a &lt;strong&gt;coding-agent harness&lt;/strong&gt; with tool calling and project workflows.&lt;/p&gt;</summary>
+    <category term="coding-agents" />
+    <category term="ai" />
+  </entry>
+</feed>

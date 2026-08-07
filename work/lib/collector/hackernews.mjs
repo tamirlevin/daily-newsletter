@@ -6,7 +6,7 @@ import {
 } from "./shared.mjs";
 
 const AI_TOPIC_PATTERN =
-  /\b(?:ai|artificial intelligence|machine learning|deep learning|neural network|large language model|language model|llms?|gpt(?:-\d[\w.-]*)?|chatgpt|openai|anthropic|claude|gemini|deepmind|mistral|llama|qwen|hugging face|transformers?|diffusion model|model inference|fine[- ]tun(?:e|ing)|agentic|ai agents?|coding agents?|model context protocol|cuda|nvidia)\b/i;
+  /\b(?:ai|artificial intelligence|machine learning|deep learning|neural network|large language model|language model|llms?|gpt(?:-\d[\w.-]*)?|chatgpt|openai|anthropic|claude|gemini|deepmind|mistral|llama|qwen|hugging face|transformers?|diffusion model|model inference|fine[- ]tun(?:e|ing)|agentic|ai agents?|coding[- ]agents?|mcp|model context protocol|agent skills?|agents? sdk|agents? framework|agents? harness|sub-?agents?|multi-?agents?|tool calling|computer use|agent2agent|a2a|langgraph|langchain|llamaindex|crewai|pydantic ai|mastra|autogen|semantic kernel|cuda|nvidia)\b/i;
 
 const AI_HOSTS = new Set([
   "ai.google.dev",
@@ -37,10 +37,8 @@ function storyUrl(story) {
 }
 
 export function isAiRelevantHackerNewsStory(story) {
-  const text = normalizeWhitespace(
-    `${story.title ?? ""} ${plainText(story.story_text ?? "")}`,
-  );
-  if (AI_TOPIC_PATTERN.test(text)) return true;
+  const title = normalizeWhitespace(story.title ?? "");
+  if (AI_TOPIC_PATTERN.test(title)) return true;
 
   try {
     return AI_HOSTS.has(new URL(story.url).hostname.toLocaleLowerCase());

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>InfoQ AI, ML and Data Engineering News</title>
+    <item>
+      <title>HubSpot Redesigns JITA Authorization with Rule Engine Architecture</title>
+      <link>https://www.infoq.com/news/2026/08/hubspot-jita-rule-engine</link>
+      <pubDate>Thu, 06 Aug 2026 10:00:00 GMT</pubDate>
+      <description>HubSpot rebuilt just-in-time authorization around a rule engine, dependency graph, and governance controls.</description>
+      <category>Architecture</category>
+    </item>
+    <item>
+      <title>Vercel launches an agent platform for production workflows</title>
+      <link>https://www.infoq.com/news/2026/08/vercel-agent-platform</link>
+      <pubDate>Wed, 05 Aug 2026 10:00:00 GMT</pubDate>
+      <description>The platform helps developers deploy AI agents with tools, durable workflows, and production observability.</description>
+      <category>AI, ML &amp; Data Engineering</category>
+    </item>
+  </channel>
+</rss>

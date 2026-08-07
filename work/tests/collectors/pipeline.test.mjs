@@ -44,6 +44,10 @@ test("builds a publishable run and source-health report without source prose", a
       await fixture("official-news.xml"),
     ],
     [
+      "https://blog.modelcontextprotocol.io/index.xml",
+      await fixture("builder-news.xml"),
+    ],
+    [
       "https://www.anthropic.com/news",
       await fixture("anthropic-news.html"),
     ],
@@ -57,8 +61,6 @@ test("builds a publishable run and source-health report without source prose", a
           ? await fixture("anthropic-article.html")
           : url.startsWith("https://hn.algolia.com/api/v1/search_by_date")
             ? await fixture("hackernews.json")
-            : url.startsWith("https://huggingface.co/api/daily_papers")
-              ? await fixture("huggingface-papers.json")
         : null);
     if (!text) throw new Error(`Unexpected fixture request: ${url}`);
     return {
@@ -81,8 +83,9 @@ test("builds a publishable run and source-health report without source prose", a
         editorialMix: {
           executive: 0.6,
           technical: 0.2,
-          research: 0.2,
+          builder: 0.2,
         },
+        selectionRules: { maxModelLabItems: 2 },
       },
       weekly: {
         lookbackDays: 7,
@@ -90,8 +93,9 @@ test("builds a publishable run and source-health report without source prose", a
         editorialMix: {
           executive: 0.7,
           technical: 0.2,
-          research: 0.1,
+          builder: 0.1,
         },
+        selectionRules: { maxModelLabItems: 3 },
       },
     },
     enrichmentPoolMultiplier: 3,
@@ -100,18 +104,20 @@ test("builds a publishable run and source-health report without source prose", a
       discoveryWeight: {
         "diverse-newsletter": 1,
         "community-signal": 0.85,
-        "official-lab": 0.6,
-        "research-index": 0.55,
+        "official-ecosystem": 0.68,
+        "official-lab": 0.3,
       },
       evidenceAuthority: {
         "diverse-newsletter": 0.45,
         "community-signal": 0.25,
         "official-lab": 1,
-        "research-index": 0.85,
+        "official-ecosystem": 1,
       },
     },
     selectionRules: {
       maxUncorroboratedOfficialItemsPerVendor: 1,
+      modelLabVendors: ["openai", "anthropic", "google"],
+      maxModelLabItemsPerVendor: 1,
       maxSoleDiscoveryItemsBySource: {
         "hacker-news": 3,
       },
@@ -186,14 +192,14 @@ test("builds a publishable run and source-health report without source prose", a
         excludeTitlePatterns: ["\\b(?:tips?|ways) (?:for|to)\\b"],
       },
       {
-        id: "huggingface-papers",
-        name: "Hugging Face Daily Papers",
-        type: "huggingface-papers",
-        role: "research-index",
-        kind: "discovery",
+        id: "mcp-blog",
+        name: "Model Context Protocol Blog",
+        type: "official-rss",
+        role: "official-ecosystem",
+        kind: "primary",
+        vendor: "model-context-protocol",
         enabled: true,
-        apiUrl: "https://huggingface.co/api/daily_papers",
-        maxPaperAgeDays: 45,
+        feedUrl: "https://blog.modelcontextprotocol.io/index.xml",
       },
     ],
   };
@@ -226,7 +232,7 @@ test("builds a publishable run and source-health report without source prose", a
     1,
   );
   assert.equal(
-    healthReport.sources.find(({ id }) => id === "huggingface-papers")
+    healthReport.sources.find(({ id }) => id === "mcp-blog")
       .acceptedCandidates,
     1,
   );
@@ -259,7 +265,7 @@ test("builds a publishable run and source-health report without source prose", a
   assert.deepEqual(dailyDraft.editorialPolicy.selectedMix, {
     executive: 3,
     technical: 1,
-    research: 1,
+    builder: 1,
   });
   assert.equal(
     dailyDraft.items.some((item) => item.url === draft.items[0].url),
