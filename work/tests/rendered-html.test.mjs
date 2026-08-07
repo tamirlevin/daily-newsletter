@@ -88,6 +88,7 @@ test("keeps controls cadence-specific and gives each History a search", async ()
 
   const weeklyHtml = renderWithRuns(runs, "weekly");
   assert.match(weeklyHtml, /id="brief-search-weekly"[^>]+type="search"/i);
+  assert.match(weeklyHtml, /Builder signal/i);
   assert.match(
     weeklyHtml,
     /role="group"[^>]+aria-label="Filter Weekly stories by category"/i,
@@ -124,6 +125,34 @@ test("renders a schema-version-2 run without generated summaries", async () => {
 
   assert.equal((html.match(/class="story-row"/g) ?? []).length, 5);
   assert.match(html, /Open the linked source for the full published context/);
+});
+
+test("renders retained research history after the active lane becomes builder", async () => {
+  const daily = await seedRun("daily");
+  const weekly = await seedRun("weekly");
+  const legacy = structuredClone(weekly);
+  const builder = legacy.items.find(
+    (story) => story.editorialLane === "builder",
+  );
+  assert.ok(builder);
+  builder.editorialLane = "research";
+  delete legacy.editorialPolicy.selectedMix.builder;
+  legacy.editorialPolicy.selectedMix.research = 1;
+
+  const { renderWithRuns } = await serverRenderer();
+  const latestHtml = renderWithRuns(
+    { daily: [daily], weekly: [legacy] },
+    "weekly",
+  );
+  assert.match(latestHtml, /Research watch/i);
+  assert.equal((latestHtml.match(/data-filter=/g) ?? []).length, 4);
+
+  const historyHtml = renderWithRuns(
+    { daily: [daily], weekly: [legacy] },
+    "history-weekly",
+  );
+  assert.match(historyHtml, /Research watch/i);
+  assert.match(historyHtml, />7\/2\/1</);
 });
 
 test("renders a schema-version-3 unavailable summary as a link-only row", async () => {

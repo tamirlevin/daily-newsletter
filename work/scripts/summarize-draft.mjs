@@ -61,14 +61,14 @@ async function main() {
     }/${draft.sourceHealth?.configuredSources ?? 0} healthy)  `,
     `**Editorial mix:** ${mix.executive ?? 0} executive · ${
       mix.technical ?? 0
-    } technical · ${mix.research ?? 0} research  `,
+    } technical · ${mix.builder ?? 0} builder  `,
     `**Summary coverage:** ${
       draft.sourceHealth?.summaryCoverage?.generated ?? 0
     } generated · ${
       draft.sourceHealth?.summaryCoverage?.unavailable ?? 0
     } link-only`,
     "",
-    `> A complete run is published automatically after the site verifies the ${draft.items?.length ?? 0}-story ${mix.executive ?? 0}/${mix.technical ?? 0}/${mix.research ?? 0} mix, source health, unique links, and evidence flags. A selected story may publish as a link-only row when summary generation fails.`,
+    `> A complete run is published automatically after the site verifies the ${draft.items?.length ?? 0}-story ${mix.executive ?? 0}/${mix.technical ?? 0}/${mix.builder ?? 0} mix, source health, unique links, and evidence flags. A selected story may publish as a link-only row when summary generation fails.`,
     "",
     "| Lane | Candidate | Discovery | Evidence | Score |",
     "| --- | --- | --- | --- | ---: |",

@@ -9,10 +9,10 @@ Daily and Weekly use the same source collectors, evidence policy, ranking
 system, and reader design. Their publication profiles are separate:
 
 - Daily: a three-day discovery window, excluding links already used in retained
-  Daily history; five stories in a 3 executive / 1 technical / 1 research mix;
+  Daily history; five stories in a 3 executive / 1 technical / 1 builder mix;
   seven successful runs retained.
-- Weekly: ten stories in the existing 7 / 2 / 1 mix, with three successful
-  runs retained.
+- Weekly: ten stories in a 7 executive / 2 technical / 1 builder mix, with
+  three successful runs retained.
 
 The reader uses a compact single-column layout with flat numbered rows and
 modest sans-serif headings. Daily is intended for immediate reading and has no
@@ -52,8 +52,10 @@ npm run summarize:draft -- --cadence weekly
 The collector reads:
 
 - TLDR AI and AlphaSignal for broad discovery.
-- Hacker News for community attention.
-- Hugging Face Daily Papers for research direction.
+- InfoQ AI/ML News for independent industry reporting.
+- Simon Willison and Hacker News for practitioner and community attention.
+- Cloudflare Agents and the official Model Context Protocol blog for focused
+  builder developments and primary evidence.
 - OpenAI, Anthropic, and Google / Gemini feeds for primary evidence.
 
 It writes timestamped JSON under cadence-specific `data/drafts/` and
@@ -110,11 +112,20 @@ Sites also holds these runtime values:
 
 ## Source policy
 
-Discovery value and evidence authority are scored separately. Newsletters can
-surface a story; an official announcement, original paper, repository, or
-specific primary link strengthens its evidence. Official lab feeds are ranked
-down as discovery because they are orchestrated communications rather than
-independent coverage.
+Discovery value and evidence authority are scored separately. Newsletters,
+independent reporting, and practitioner sources can surface a story; an
+official announcement, original paper, repository, or specific primary link
+strengthens its evidence. Primary feeds do not receive independent-discovery
+credit. Coverage led by a recognised model lab is capped at two stories in
+Daily and three in Weekly, with at most one per lab. The same hard limit applies
+to official announcements and third-party coverage, and the publication gate
+checks it again before storage.
+
+The builder lane covers useful new tools, protocols, platforms, integrations,
+and workflows that can be adopted now. Technical remains the deeper lane for
+architecture, implementation, inference, training, performance, and
+evaluation. Academic papers can still compete on consequence, but there is no
+reserved research slot or active Daily Papers source.
 
 Direct X ingestion is deliberately absent to avoid an API or personal-account
 dependency. X links already present in newsletters or other configured sources

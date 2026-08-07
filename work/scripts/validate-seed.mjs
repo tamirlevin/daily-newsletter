@@ -14,7 +14,7 @@ async function main() {
   );
   const validated = payloads.map(validatePublicationRun);
   process.stdout.write(
-    `${validated.map((run) => `Embedded ${run.cadence} run is valid (${run.mix.executive}/${run.mix.technical}/${run.mix.research}).`).join("\n")}\n`,
+    `${validated.map((run) => `Embedded ${run.cadence} run is valid (${run.mix.executive}/${run.mix.technical}/${run.mix.builder}).`).join("\n")}\n`,
   );
 }
 

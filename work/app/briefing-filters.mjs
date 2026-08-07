@@ -1,10 +1,15 @@
 const PUBLISHER_BY_DOMAIN = Object.freeze({
+  "allenai.org": "Ai2",
   "anthropic.com": "Anthropic",
   "arxiv.org": "arXiv",
+  "blog.cloudflare.com": "Cloudflare",
   "blog.google": "Google Research",
+  "blog.modelcontextprotocol.io": "Model Context Protocol",
   "cerebras.ai": "Cerebras",
   "github.com": "GitHub",
+  "github.blog": "GitHub",
   "huggingface.co": "Hugging Face",
+  "infoq.com": "InfoQ",
   "lmstudio.ai": "LM Studio",
   "openai.com": "OpenAI",
   "wsj.com": "The Wall Street Journal",
@@ -12,7 +17,8 @@ const PUBLISHER_BY_DOMAIN = Object.freeze({
 
 const LANE_LABELS = Object.freeze({
   executive: "Executive Signal",
-  technical: "For Builders",
+  technical: "Technical Signal",
+  builder: "Builder Signal",
   research: "Research Watch",
 });
 

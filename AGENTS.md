@@ -30,18 +30,25 @@ and **How it works** views.
 2. The reader is public. Administrative or editorial controls do not belong in
    the public UI.
 3. Every Daily briefing contains exactly five stories: three executive, one
-   technical, and one research. Every Weekly briefing contains exactly ten:
-   seven executive, two technical, and one research.
+   technical, and one builder. Every Weekly briefing contains exactly ten:
+   seven executive, two technical, and one builder. Builder is the practical
+   adoption lane for useful tools, protocols, platforms, and workflows;
+   technical is reserved for architecture, implementation, and performance.
 4. Retain exactly seven successful Daily runs and three successful Weekly runs.
    Failed attempts are diagnostics, not history entries.
 5. A failed, partial, unhealthy, promotional, or insufficiently evidenced run
    must not replace the last good briefing.
-6. TLDR AI and AlphaSignal provide broad discovery; Hacker News provides
-   community signal; Hugging Face Daily Papers provides research discovery;
-   OpenAI, Anthropic, and Google/Gemini are primarily evidence sources.
-7. Official lab feeds are down-weighted for discovery because they are
-   orchestrated communications, while their primary-source evidence remains
-   valuable.
+6. TLDR AI and AlphaSignal provide broad discovery; InfoQ provides independent
+   industry reporting; Simon Willison and Hacker News provide practitioner and
+   community signal. Cloudflare Agents and the official Model Context Protocol
+   blog provide focused builder evidence. OpenAI, Anthropic, and Google/Gemini
+   are primarily evidence sources. Hugging Face Daily Papers is not an active
+   source because academic papers no longer receive a reserved slot.
+7. Primary feeds do not earn independent-discovery credit. Coverage led by a
+   recognised model lab is capped at two stories in Daily and three in Weekly,
+   with at most one story per lab, even when a third party discovered or
+   reported it. These are hard collector and publication limits: an otherwise
+   valid run fails rather than relaxing them.
 8. Do not add direct X ingestion or a dependency on the user's X account. A
    specific X link discovered through an existing public source may still be
    selected.
@@ -60,9 +67,10 @@ and **How it works** views.
     the recipient is the email address attached to the Resend account.
 12. Run identity is `{cadence}:{Melbourne issue date}`. Re-running the same
     issue must not create another history record or another email.
-13. Daily uses a three-day discovery window so the research slot remains viable
-    on weekends. Before collection, the workflow loads retained Daily URLs from
-    Sites and excludes them so the wider window does not repeat recent stories.
+13. Daily uses a three-day discovery window so a varied five-story issue remains
+    viable on weekends. Before collection, the workflow loads retained Daily
+    URLs from Sites and excludes them so the wider window does not repeat recent
+    stories.
 14. Summaries are best-effort enrichment, not a publication gate. GitHub
     Actions attempts an independently written 35–75 word `briefSummary` for
     each selected story with GitHub Models and its automatic `GITHUB_TOKEN`.
@@ -121,6 +129,7 @@ source of truth.
 | Product/operations overview | `README.md`, `work/README.md` |
 | Source list, weights, mix | `work/config/editorial.json` |
 | Cadence invariants | `work/lib/briefing-profiles.mjs` |
+| Model-lab identification | `work/lib/model-labs.mjs` |
 | Source parsers | `work/lib/collector/` |
 | Collection orchestration | `work/lib/collector/pipeline.mjs` |
 | Ranking and lane rules | `work/lib/collector/editorial.mjs` |
@@ -245,7 +254,7 @@ Never put secret values in `.openai/hosting.json`; that manifest is committed.
 2. Update `work/lib/collector/editorial.mjs` only when configuration cannot
    express the rule.
 3. Add or update focused cases in `work/tests/collectors/editorial.test.mjs`.
-4. Keep both 3/1/1 and 7/2/1 invariants in sync across configuration,
+4. Keep both 3/1/1 and 7/2/1 executive/technical/builder invariants in sync across configuration,
    `work/lib/briefing-profiles.mjs`, and `work/worker/publication.mjs`.
 
 ### Add or repair a source

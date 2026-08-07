@@ -8,7 +8,11 @@ import {
   visibleHistoryStories,
 } from "./briefing-filters.mjs";
 
-export type EditorialLane = "executive" | "technical" | "research";
+export type EditorialLane =
+  | "executive"
+  | "technical"
+  | "builder"
+  | "research";
 
 type SourceAttribution = {
   sourceName: string;
@@ -48,8 +52,8 @@ export type PublicationRun = {
   };
   editorialPolicy: {
     profile: "daily" | "weekly";
-    targetMix: Record<EditorialLane, number>;
-    selectedMix: Record<EditorialLane, number>;
+    targetMix: Partial<Record<EditorialLane, number>>;
+    selectedMix: Partial<Record<EditorialLane, number>>;
     directXCoverage?: {
       capturedFromConfiguredSources: number;
       selected: number;
@@ -107,9 +111,15 @@ const laneDetails: Record<
   },
   technical: {
     short: "Technical",
-    title: "For builders",
+    title: "Technical signal",
     description:
-      "Tools and implementation shifts with a practical next move for delivery teams.",
+      "Architecture, implementation, and performance shifts that reward a closer technical read.",
+  },
+  builder: {
+    short: "Builders",
+    title: "Builder signal",
+    description:
+      "A useful new tool, protocol, platform, or workflow with a practical next move.",
   },
   research: {
     short: "Research",
@@ -119,7 +129,26 @@ const laneDetails: Record<
   },
 };
 
-const laneOrder: EditorialLane[] = ["executive", "technical", "research"];
+const laneOrder: EditorialLane[] = [
+  "executive",
+  "technical",
+  "builder",
+  "research",
+];
+
+function lanesInRun(run: PublicationRun) {
+  const present = new Set(run.items.map((story) => story.editorialLane));
+  return laneOrder.filter((lane) => present.has(lane));
+}
+
+function mixLabel(run: PublicationRun) {
+  const mix = run.editorialPolicy.selectedMix;
+  return [
+    mix.executive ?? 0,
+    mix.technical ?? 0,
+    mix.builder ?? mix.research ?? 0,
+  ].join("/");
+}
 
 function formatDate(value: string, options?: Intl.DateTimeFormatOptions) {
   const date = new Date(value);
@@ -186,10 +215,11 @@ function CadenceView({ run }: { run: PublicationRun }) {
   const [query, setQuery] = useState("");
   const [activeLane, setActiveLane] = useState<"all" | EditorialLane>("all");
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const runLanes = useMemo(() => lanesInRun(run), [run]);
 
   const visibleGroups = useMemo(
     () =>
-      laneOrder
+      runLanes
         .filter((lane) => activeLane === "all" || activeLane === lane)
         .map((lane) => ({
           lane,
@@ -200,7 +230,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
           ),
         }))
         .filter((group) => group.stories.length > 0),
-    [activeLane, normalizedQuery, run.items],
+    [activeLane, normalizedQuery, run.items, runLanes],
   );
 
   const visibleCount = visibleGroups.reduce(
@@ -280,7 +310,7 @@ function CadenceView({ run }: { run: PublicationRun }) {
                 >
                   All
                 </button>
-                {laneOrder.map((lane) => (
+                {runLanes.map((lane) => (
                   <button
                     type="button"
                     data-filter={lane}
@@ -463,9 +493,7 @@ function HistoryView({
                     </small>
                   </span>
                   <span className="history-run__mix">
-                    {run.editorialPolicy.selectedMix.executive}/
-                    {run.editorialPolicy.selectedMix.technical}/
-                    {run.editorialPolicy.selectedMix.research}
+                    {mixLabel(run)}
                   </span>
                 </summary>
 
@@ -534,7 +562,7 @@ function SystemView() {
           <span>01</span>
           <h2>Collect</h2>
           <p>
-            Scheduled GitHub runners read the same seven public feeds every day
+            Scheduled GitHub runners read the same focused public sources every day
             and for the Friday Weekly edition, or whenever a manual run starts.
           </p>
         </article>
@@ -581,16 +609,19 @@ function SystemView() {
               <dd>TLDR AI and AlphaSignal</dd>
             </div>
             <div>
-              <dt>Community signal</dt>
-              <dd>Hacker News</dd>
+              <dt>Independent reporting</dt>
+              <dd>InfoQ AI/ML News</dd>
             </div>
             <div>
-              <dt>Research direction</dt>
-              <dd>Hugging Face Daily Papers</dd>
+              <dt>Practitioner + community</dt>
+              <dd>Simon Willison and Hacker News</dd>
             </div>
             <div>
               <dt>Primary evidence</dt>
-              <dd>OpenAI, Anthropic, and Google / Gemini</dd>
+              <dd>
+                Cloudflare Agents, the MCP project, OpenAI, Anthropic, and
+                Google / Gemini
+              </dd>
             </div>
           </dl>
         </article>

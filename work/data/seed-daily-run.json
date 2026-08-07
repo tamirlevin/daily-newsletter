@@ -16,37 +16,54 @@
     "targetMix": {
       "executive": 0.6,
       "technical": 0.2,
-      "research": 0.2
+      "builder": 0.2
     },
     "selectedMix": {
       "executive": 3,
       "technical": 1,
-      "research": 1
+      "builder": 1
     },
     "sourceSignals": {
       "discoveryWeight": {
         "diverse-newsletter": 1,
+        "independent-publication": 1,
+        "practitioner-signal": 0.92,
         "community-signal": 0.85,
-        "official-lab": 0.6,
-        "research-index": 0.55
+        "official-ecosystem": 0.68,
+        "official-builder": 0.5,
+        "official-lab": 0.3
       },
       "evidenceAuthority": {
         "diverse-newsletter": 0.45,
+        "independent-publication": 0.65,
+        "practitioner-signal": 0.7,
         "community-signal": 0.25,
-        "official-lab": 1,
-        "research-index": 0.85
+        "official-ecosystem": 1,
+        "official-builder": 1,
+        "official-lab": 1
       }
     },
     "selectionRules": {
       "maxUncorroboratedOfficialItemsPerVendor": 1,
+      "modelLabVendors": [
+        "openai",
+        "anthropic",
+        "google"
+      ],
+      "maxModelLabItems": 2,
+      "maxModelLabItemsPerVendor": 1,
       "maxSoleDiscoveryItemsBySource": {
-        "hacker-news": 3
+        "hacker-news": 3,
+        "infoq-ai-ml-news": 2,
+        "simon-coding-agents": 1
       },
       "maxSoleDiscoveryItemsBySourcePerLane": {
-        "hacker-news": 1
+        "hacker-news": 1,
+        "infoq-ai-ml-news": 1,
+        "simon-coding-agents": 1
       }
     },
-    "note": "Newsletters, Hacker News, and Hugging Face are discovery signals. Official lab sources are primary evidence, not independent corroboration. Published copy must be written independently.",
+    "note": "Newsletters, InfoQ, Simon Willison, and Hacker News provide independent discovery. Cloudflare Agents, the MCP project, and official lab sources provide primary evidence, not independent corroboration. Published copy must be written independently.",
     "directXCoverage": {
       "capturedFromConfiguredSources": 3,
       "selected": 0,
@@ -55,8 +72,8 @@
   },
   "sourceHealth": {
     "status": "healthy",
-    "healthySources": 7,
-    "configuredSources": 7
+    "healthySources": 10,
+    "configuredSources": 10
   },
   "items": [
     {
@@ -108,7 +125,7 @@
       "laneSignals": {
         "executive": 5,
         "technical": 0,
-        "research": 1.8
+        "builder": 0
       },
       "score": 13.3,
       "sourceSignals": {
@@ -134,11 +151,11 @@
       }
     },
     {
-      "title": "AMD and Anthropic Sign Major Chips-and-Investment Deal",
-      "url": "https://www.wsj.com/tech/ai/amd-and-anthropic-sign-major-chips-and-investment-deal-4adfdc45?reflink=desktopwebshare_permalink&st=o7d3rp",
+      "title": "Copilot cloud agent for Linear is now generally available",
+      "url": "https://github.blog/changelog/2026-07-23-copilot-cloud-agent-for-linear-is-now-generally-available",
       "publishedAt": "2026-07-23T00:00:00.000Z",
       "section": "Headlines & Launches",
-      "readingTime": "3 minute read",
+      "readingTime": "1 minute read",
       "sourceRole": "diverse-newsletter",
       "sourceKind": "discovery",
       "sourceAttributions": [
@@ -152,26 +169,26 @@
           "vendor": null
         }
       ],
-      "id": "496592b837fecb7f",
-      "canonicalUrl": "https://www.wsj.com/tech/ai/amd-and-anthropic-sign-major-chips-and-investment-deal-4adfdc45?reflink=desktopwebshare_permalink&st=o7d3rp",
-      "originalDomain": "www.wsj.com",
+      "id": "fca8d05549f9f5aa",
+      "canonicalUrl": "https://github.blog/changelog/2026-07-23-copilot-cloud-agent-for-linear-is-now-generally-available",
+      "originalDomain": "github.blog",
       "discoveredBy": [
         "TLDR AI"
       ],
       "discoverySourceCount": 1,
       "primarySourceCount": 0,
       "corroborationCount": 1,
-      "vendor": null,
+      "vendor": "github",
       "reviewStatus": "needs-review",
       "summaryStatus": "generated",
-      "briefSummary": "Anthropic agreed to buy up to two gigawatts of AMD Instinct MI450 systems in a multiyear infrastructure deal valued in the tens of billions of dollars. AMD may invest as much as $5 billion as deployment milestones are reached, deepening competition in AI accelerators.",
+      "briefSummary": "GitHub made its asynchronous Copilot cloud agent generally available inside Linear. Teams can assign an issue to the agent, let it work in an isolated environment and open a draft pull request, then control its model, branch, custom instructions and steering from the Linear conversation.",
       "editorialLane": "executive",
       "laneSignals": {
-        "executive": 4.2,
-        "technical": 1.4,
-        "research": 0
+        "executive": 2.5,
+        "technical": 0.5,
+        "builder": 2.1
       },
-      "score": 11.21,
+      "score": 10.8,
       "sourceSignals": {
         "discoveryWeight": 1,
         "evidenceAuthority": 0.45,
@@ -180,8 +197,8 @@
       },
       "selectionReasons": [
         "executive lane",
-        "commercial or operating impact",
-        "market-moving transaction",
+        "platform or ecosystem shift",
+        "adoption or operating-model change",
         "high-signal newsletter section"
       ],
       "flags": {
@@ -242,7 +259,7 @@
       "laneSignals": {
         "executive": 2.4,
         "technical": 1.9,
-        "research": 0
+        "builder": 0
       },
       "score": 11.1,
       "sourceSignals": {
@@ -317,7 +334,7 @@
       "laneSignals": {
         "executive": 0.7,
         "technical": 2.3,
-        "research": 0
+        "builder": 0
       },
       "score": 9.16,
       "sourceSignals": {
@@ -342,70 +359,57 @@
       }
     },
     {
-      "title": "Color Pass-Through via Camera-Display Coupling",
-      "url": "https://arxiv.org/abs/2607.12746",
-      "publishedAt": "2026-07-14T00:00:00.000Z",
-      "section": "Research Watch",
-      "sourceRole": "research-index",
+      "title": "GitHub MCP Server supports the next MCP specification",
+      "url": "https://github.blog/changelog/2026-07-23-github-mcp-server-supports-the-next-mcp-specification",
+      "publishedAt": "2026-07-23T00:00:00.000Z",
+      "section": "AI, ML & Data Engineering",
+      "sourceRole": "independent-publication",
       "sourceKind": "discovery",
-      "engagement": {
-        "upvotes": 18,
-        "comments": 2
-      },
-      "paperMetadata": {
-        "paperId": "2607.12746",
-        "submittedAt": "2026-07-24T00:00:00.000Z",
-        "organization": "MMLab-CUHK",
-        "projectPage": "https://lyricccco.github.io/color-pass-through"
-      },
       "evidenceUrls": [
-        "https://arxiv.org/abs/2607.12746",
-        "https://huggingface.co/papers/2607.12746",
-        "https://lyricccco.github.io/color-pass-through"
+        "https://github.blog/changelog/2026-07-23-github-mcp-server-supports-the-next-mcp-specification"
       ],
       "sourceAttributions": [
         {
-          "sourceId": "huggingface-papers",
-          "sourceName": "Hugging Face Daily Papers",
-          "sourceRole": "research-index",
+          "sourceId": "infoq-ai-ml-news",
+          "sourceName": "InfoQ AI/ML News",
+          "sourceRole": "independent-publication",
           "sourceKind": "discovery",
-          "sourceUrl": "https://huggingface.co/papers/2607.12746",
-          "section": "Daily Papers",
+          "sourceUrl": "https://www.infoq.com/ai-ml-data-eng/",
+          "section": "AI, ML & Data Engineering",
           "vendor": null
         }
       ],
-      "id": "e3d99ec0751e3c96",
-      "canonicalUrl": "https://arxiv.org/abs/2607.12746",
-      "originalDomain": "arxiv.org",
+      "id": "f3762d253a5abb7b",
+      "canonicalUrl": "https://github.blog/changelog/2026-07-23-github-mcp-server-supports-the-next-mcp-specification",
+      "originalDomain": "github.blog",
       "discoveredBy": [
-        "Hugging Face Daily Papers"
+        "InfoQ AI/ML News"
       ],
       "discoverySourceCount": 1,
       "primarySourceCount": 0,
       "corroborationCount": 1,
-      "vendor": null,
+      "vendor": "github",
       "reviewStatus": "needs-review",
       "summaryStatus": "generated",
-      "briefSummary": "The researchers calibrate a phone camera and display as one learned system instead of treating capture and reproduction as separate stages. Their approach more than doubles quantitative performance against representative baselines and improves perceived colour reproduction in a controlled user study.",
-      "editorialLane": "research",
+      "briefSummary": "GitHub added early support for the 2026-07-28 Model Context Protocol specification to its MCP Server. The stateless core removes protocol sessions and the initialize handshake, making horizontal scaling simpler, while the accompanying SDK work adds compatibility tests for clients and servers.",
+      "editorialLane": "builder",
       "laneSignals": {
-        "executive": 0,
-        "technical": 1.4,
-        "research": 3.5
+        "executive": 1,
+        "technical": 0.5,
+        "builder": 3.1
       },
-      "score": 11.65,
+      "score": 10.25,
       "sourceSignals": {
-        "discoveryWeight": 0.55,
-        "evidenceAuthority": 0.95,
+        "discoveryWeight": 1,
+        "evidenceAuthority": 1,
         "discoverySourceCount": 1,
         "primarySourceCount": 0
       },
       "selectionReasons": [
-        "research lane",
-        "research result",
-        "evaluation or evidence",
-        "primary-source evidence",
-        "high-consequence research topic"
+        "builder lane",
+        "practical builder surface",
+        "agent or protocol relevance",
+        "primary-source evidence"
       ],
       "flags": {
         "originatedOnX": false,

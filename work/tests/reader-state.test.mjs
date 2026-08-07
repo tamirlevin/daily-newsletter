@@ -38,8 +38,12 @@ test("Weekly story search covers headline, publisher, and category", async () =>
     1,
   );
   assert.equal(
-    weekly.items.filter((story) => storyMatches(story, "For Builders")).length,
+    weekly.items.filter((story) => storyMatches(story, "Technical Signal")).length,
     2,
+  );
+  assert.equal(
+    weekly.items.filter((story) => storyMatches(story, "Builder Signal")).length,
+    1,
   );
   assert.equal(
     weekly.items.filter((story) => storyMatches(story, "OpenAI")).length > 0,
@@ -49,13 +53,21 @@ test("Weekly story search covers headline, publisher, and category", async () =>
 
 test("Weekly filtering preserves the original global story number", async () => {
   const weekly = await seedRun("weekly");
-  const builders = weekly.items.filter((story) =>
-    storyMatches(story, "For Builders"),
+  const technical = weekly.items.filter((story) =>
+    storyMatches(story, "Technical Signal"),
   );
+  const builder = weekly.items.find((story) =>
+    storyMatches(story, "Builder Signal"),
+  );
+  assert.ok(builder);
 
   assert.deepEqual(
-    builders.map((story) => issueStoryNumber(weekly.items, story)),
+    technical.map((story) => issueStoryNumber(weekly.items, story)),
     [8, 9],
+  );
+  assert.equal(
+    issueStoryNumber(weekly.items, builder),
+    10,
   );
 });
 
@@ -66,15 +78,29 @@ test("History matches issue date, headline, publisher, and category", async () =
   assert.equal(historyRunMatches(daily, "25 July", issueLabel), true);
   assert.equal(historyRunMatches(daily, "AI economy", issueLabel), true);
   assert.equal(historyRunMatches(daily, "Google Research", issueLabel), true);
-  assert.equal(historyRunMatches(daily, "Research Watch", issueLabel), true);
+  assert.equal(historyRunMatches(daily, "Builder Signal", issueLabel), true);
   assert.equal(historyRunMatches(daily, "no such issue", issueLabel), false);
 
   assert.equal(
-    visibleHistoryStories(daily, "Research Watch", issueLabel).length,
+    visibleHistoryStories(daily, "Builder Signal", issueLabel).length,
     1,
   );
   assert.equal(
     visibleHistoryStories(daily, "25 July", issueLabel).length,
     daily.items.length,
   );
+});
+
+test("keeps legacy research-lane history searchable", async () => {
+  const legacy = structuredClone(await seedRun("daily"));
+  const builder = legacy.items.find(
+    (story) => story.editorialLane === "builder",
+  );
+  assert.ok(builder);
+  builder.editorialLane = "research";
+  delete legacy.editorialPolicy.selectedMix.builder;
+  legacy.editorialPolicy.selectedMix.research = 1;
+
+  assert.equal(historyRunMatches(legacy, "Research Watch"), true);
+  assert.equal(visibleHistoryStories(legacy, "Research Watch").length, 1);
 });

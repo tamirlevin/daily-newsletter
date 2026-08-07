@@ -7,6 +7,9 @@ export type BriefingProfile = {
   maxItems: number;
   editorialMix: Readonly<Record<string, number>>;
   expectedMix: Readonly<Record<string, number>>;
+  selectionRules: Readonly<{
+    maxModelLabItems: number;
+  }>;
   retainedRuns: number;
   emailEnabled: boolean;
 };

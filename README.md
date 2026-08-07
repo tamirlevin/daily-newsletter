@@ -1,7 +1,7 @@
 # AI Daily + Weekly Brief
 
 Public, automatically refreshed Daily and Weekly AI briefings for executive,
-technical, and research readers.
+technical, and builder readers.
 
 Live site:
 [ai-weekly-brief.tamirlevin300024.chatgpt.site](https://ai-weekly-brief.tamirlevin300024.chatgpt.site/)

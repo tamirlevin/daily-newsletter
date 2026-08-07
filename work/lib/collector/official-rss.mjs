@@ -36,7 +36,15 @@ function itemLink(value) {
 function htmlToText(value) {
   if (!value) return "";
   const $ = load(`<main>${String(value)}</main>`);
-  return normalizeWhitespace($("main").text());
+  const decoded = $("main").text();
+  const decodedHtml = load(`<main>${decoded}</main>`);
+  return normalizeWhitespace(decodedHtml("main").text());
+}
+
+function contentValue(value) {
+  if (typeof value === "string" || typeof value === "number") return value;
+  if (!value || typeof value !== "object") return "";
+  return value["#text"] ?? "";
 }
 
 function matchesAny(value, patterns = []) {
@@ -45,6 +53,15 @@ function matchesAny(value, patterns = []) {
 
 function isEligibleItem(item, source) {
   if (matchesAny(item.title, source.excludeTitlePatterns)) return false;
+  if (
+    (source.requireContentPatterns?.length ?? 0) > 0 &&
+    !matchesAny(
+      `${item.title} ${item.description}`,
+      source.requireContentPatterns,
+    )
+  ) {
+    return false;
+  }
 
   const includesConfigured =
     (source.includeCategoryPatterns?.length ?? 0) > 0 ||
@@ -83,7 +100,7 @@ export function parseOfficialFeed(xml) {
         publishedAt: parseIsoDate(
           item.pubDate ?? item.published ?? item.updated,
         ),
-        description: htmlToText(rawDescription),
+        description: htmlToText(contentValue(rawDescription)),
         categories,
       };
     })
