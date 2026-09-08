@@ -6,14 +6,12 @@
       "lookbackDays": 3,
       "maxItems": 5,
       "editorialMix": {
-        "executive": 0.6,
-        "technical": 0.2,
-        "builder": 0.2
+        "executive": 0.8,
+        "technical": 0.2
       },
       "expectedMix": {
-        "executive": 3,
-        "technical": 1,
-        "builder": 1
+        "executive": 4,
+        "technical": 1
       },
       "selectionRules": {
         "maxModelLabItems": 2
