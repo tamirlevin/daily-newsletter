@@ -1,7 +1,7 @@
 # AI Daily + Weekly Brief
 
 The application combines a scheduled public-source collector with a public
-Sites reader. There is no editorial approval application: a complete,
+Sites reader. There is no editorial approval application: a non-empty,
 source-healthy run is published automatically, and an invalid run leaves the
 last good briefing untouched.
 
@@ -9,9 +9,9 @@ Daily and Weekly use the same source collectors, evidence policy, ranking
 system, and reader design. Their publication profiles are separate:
 
 - Daily: a three-day discovery window, excluding links already used in retained
-  Daily history; five stories in a 3 executive / 1 technical / 1 builder mix;
+  Daily history; up to five stories, preferring a 3 executive / 1 technical / 1 builder mix;
   seven successful runs retained.
-- Weekly: ten stories in a 7 executive / 2 technical / 1 builder mix, with
+- Weekly: up to ten stories, preferring a 7 executive / 2 technical / 1 builder mix, with
   three successful runs retained.
 
 The reader uses a compact single-column layout with flat numbered rows and
@@ -76,7 +76,7 @@ Each cadence has its own GitHub Actions scheduler. Both:
 6. keeps a diagnostic artifact for 14 days.
 
 Sites rejects a run unless it has the required unique HTTPS links, sufficient
-healthy sources, the exact cadence mix, and no selected story flagged for
+healthy sources, valid editorial lanes, and no selected story flagged for
 missing evidence or promotional language. Generated summaries must be
 independently validated, 35–75 words, plain text, non-promotional, and free of
 long copied passages. When generation or validation fails, the already-valid
@@ -141,3 +141,7 @@ recipient in the public repository. Migrations are generated with:
 ```bash
 npm run db:generate
 ```
+
+Category mixes are preferences. Missing categories are filled with the best
+remaining eligible stories; shorter non-empty issues can publish. Empty or
+unhealthy runs still preserve the last good briefing.

@@ -122,10 +122,11 @@ export function validatePublicationRun(payload) {
 
   if (
     !Array.isArray(payload.items) ||
-    payload.items.length !== profile.maxItems
+    payload.items.length < 1 ||
+    payload.items.length > profile.maxItems
   ) {
     throw new Error(
-      `A publishable ${cadence} run must contain exactly ${profile.maxItems} stories`,
+      `A publishable ${cadence} run must contain between 1 and ${profile.maxItems} stories`,
     );
   }
 
@@ -208,14 +209,6 @@ export function validatePublicationRun(payload) {
           (modelLabVendorCounts.get(vendor) ?? 0) + 1,
         );
       }
-    }
-  }
-
-  for (const [lane, expected] of Object.entries(profile.expectedMix)) {
-    if (mix[lane] !== expected) {
-      throw new Error(
-        `Editorial mix must contain ${expected} ${lane} stories`,
-      );
     }
   }
 
