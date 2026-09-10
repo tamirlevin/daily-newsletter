@@ -572,8 +572,8 @@ function SystemView() {
           <h2>Rank + summarise</h2>
           <p>
             Duplicates and promotional noise are reduced, then the strongest
-            five Daily stories or ten Weekly stories are selected in their
-            cadence-specific editorial mix. Concise, evidence-grounded
+            available stories are selected, up to five Daily or ten Weekly.
+            Category targets are flexible when suitable stories are scarce. Concise, evidence-grounded
             summaries are added when generation succeeds.
           </p>
         </article>
@@ -582,7 +582,7 @@ function SystemView() {
           <span>03</span>
           <h2>Check</h2>
           <p>
-            The run must be complete, source-healthy, uniquely linked, and
+            The run must be non-empty, source-healthy, uniquely linked, and
             evidence-ready before it can replace the current briefing. A
             summary failure leaves that selected story as a source-linked
             headline instead of blocking the issue.

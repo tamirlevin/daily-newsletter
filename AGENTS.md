@@ -29,14 +29,17 @@ and **How it works** views.
 1. Publication is automatic. A valid collector run goes directly to Sites.
 2. The reader is public. Administrative or editorial controls do not belong in
    the public UI.
-3. Every Daily briefing contains exactly five stories: three executive, one
-   technical, and one builder. Every Weekly briefing contains exactly ten:
-   seven executive, two technical, and one builder. Builder is the practical
+3. Daily targets five stories: three executive, one technical, and one builder.
+   Weekly targets ten: seven executive, two technical, and one builder.
+   These category allocations are preferences, not publication gates. Fill missing
+   lanes with the best remaining eligible stories, and publish a shorter issue
+   (at least one story) when supply is limited. Never exceed five Daily or ten
+   Weekly stories. Builder is the practical
    adoption lane for useful tools, protocols, platforms, and workflows;
    technical is reserved for architecture, implementation, and performance.
 4. Retain exactly seven successful Daily runs and three successful Weekly runs.
    Failed attempts are diagnostics, not history entries.
-5. A failed, partial, unhealthy, promotional, or insufficiently evidenced run
+5. An empty, failed, unhealthy, promotional, or insufficiently evidenced run
    must not replace the last good briefing.
 6. TLDR AI and AlphaSignal provide broad discovery; InfoQ provides independent
    industry reporting; Simon Willison and Hacker News provide practitioner and
@@ -254,7 +257,7 @@ Never put secret values in `.openai/hosting.json`; that manifest is committed.
 2. Update `work/lib/collector/editorial.mjs` only when configuration cannot
    express the rule.
 3. Add or update focused cases in `work/tests/collectors/editorial.test.mjs`.
-4. Keep both 3/1/1 and 7/2/1 executive/technical/builder invariants in sync across configuration,
+4. Keep both 3/1/1 and 7/2/1 executive/technical/builder preferences in sync across configuration,
    `work/lib/briefing-profiles.mjs`, and `work/worker/publication.mjs`.
 
 ### Add or repair a source
@@ -321,3 +324,11 @@ On 2026-07-23, PR #2 was merged as commit `32d47fd`, live deployment health
 passed, and GitHub Actions run `30008520058` completed collection and automatic
 publication successfully. This is a reference point, not current-state truth;
 future sessions should query GitHub and the live endpoints.
+
+## Flexible selection (2026-09-10)
+
+The user approved publishing the available suitable stories rather than failing
+for a missing category or a short issue. Collector configuration and shared
+profiles use the same preferred mix. Publication validates 1–5 Daily or 1–10
+Weekly stories and allowed lanes, without exact lane quotas. Evidence, duplicate,
+source-health, model-lab caps, summary, retention, and email safeguards remain.

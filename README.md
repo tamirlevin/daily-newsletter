@@ -8,7 +8,7 @@ Live site:
 
 The system has two moving parts:
 
-- GitHub Actions uses the same collectors to assemble five Daily stories and
+- GitHub Actions uses the same collectors to assemble up to five Daily stories and
   ten Weekly stories on separate schedules, then uses GitHub Models to attempt
   concise evidence-grounded summaries with the workflow's automatic token.
 - Sites validates, stores, and serves both cadences. It retains seven
@@ -29,3 +29,7 @@ Implementation and local operating instructions live in
 
 Future Codex sessions should start with [`AGENTS.md`](AGENTS.md), which records
 the architecture, durable decisions, change recipes, and release checks.
+
+Category mixes are preferences. Missing categories are filled with the best
+remaining eligible stories; shorter non-empty issues can publish. Empty or
+unhealthy runs still preserve the last good briefing.

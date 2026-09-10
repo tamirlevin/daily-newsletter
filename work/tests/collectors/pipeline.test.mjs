@@ -286,6 +286,29 @@ test("builds a publishable run and source-health report without source prose", a
     true,
   );
 
+  const withoutBuilder = structuredClone(config);
+  withoutBuilder.sources = withoutBuilder.sources.filter((source) => source.id !== "mcp-blog");
+  const { draft: flexibleDraft } = await collectBrief({
+    config: withoutBuilder, cadence: "daily",
+    excludedUrls: ["https://github.com/example/open-agent-sdk"],
+    asOf: new Date("2026-07-23T00:00:00.000Z"), lookbackDays: 7,
+    fetchText: fakeFetchText,
+  });
+  assert.equal(flexibleDraft.items.length, 5);
+  assert.equal(flexibleDraft.editorialPolicy.selectedMix.builder, 0);
+  const excluded = ["https://github.com/example/open-agent-sdk"];
+  let shorterDraft = flexibleDraft;
+  for (let attempt = 0; attempt < 10 && shorterDraft.items.length === 5; attempt += 1) {
+    excluded.push(...shorterDraft.items.slice(1).map((item) => item.url));
+    ({ draft: shorterDraft } = await collectBrief({
+      config: withoutBuilder, cadence: "daily",
+      asOf: new Date("2026-07-23T00:00:00.000Z"), lookbackDays: 7,
+      excludedUrls: excluded, fetchText: fakeFetchText,
+    }));
+  }
+  assert.ok(shorterDraft.items.length > 0);
+  assert.ok(shorterDraft.items.length < 5);
+
   for (const item of draft.items) {
     assert.equal("editorialText" in item, false);
     assert.equal("preliminaryTitle" in item, false);

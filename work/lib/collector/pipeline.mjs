@@ -7,7 +7,6 @@ import {
   enrichAnthropicCandidate,
 } from "./anthropic.mjs";
 import {
-  computeMixQuotas,
   countEditorialMix,
   dedupeCandidates,
   isPublicationEligibleCandidate,
@@ -334,23 +333,12 @@ export async function collectBrief({
     editorialMix,
     {
       ...selectionRules,
-      preserveEditorialMix: true,
+      preserveEditorialMix: false,
     },
   );
-  const expectedMix = computeMixQuotas(resolvedMaxItems, editorialMix);
   const selectedMix = countEditorialMix(selected);
-  if (
-    selected.length !== resolvedMaxItems ||
-    Object.entries(expectedMix).some(
-      ([lane, expected]) => selectedMix[lane] !== expected,
-    )
-  ) {
-    const availableMix = countEditorialMix(publicationEligible);
-    throw new Error(
-      `Unable to satisfy ${normalizedCadence} editorial mix. ` +
-      `Required ${JSON.stringify(expectedMix)}; ` +
-      `available publishable candidates ${JSON.stringify(availableMix)}.`,
-    );
+  if (selected.length === 0) {
+    throw new Error(`No publishable ${normalizedCadence} stories remain after quality and recent-link checks`);
   }
   let selectedWithSummaries = selected.map((candidate) => ({
     ...candidate,

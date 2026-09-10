@@ -100,15 +100,31 @@ test("marks an accepted run as automatically published", async () => {
   assert.equal(run.status, "ready-to-publish");
 });
 
-test("rejects an incomplete run without changing the source object", async () => {
-  const run = await seedRun("daily");
-  run.items.pop();
+test("accepts shorter issues and flexible lanes for both cadences without mutation", async () => {
+  for (const cadence of ["daily", "weekly"]) {
+    const run = await seedRun(cadence);
+    run.items = run.items.slice(0, 1);
+    run.items[0].editorialLane = "executive";
+    const before = structuredClone(run);
+    assert.doesNotThrow(() => validatePublicationRun(run));
+    assert.deepEqual(run, before);
+  }
+});
 
-  assert.throws(
-    () => validatePublicationRun(run),
-    /exactly 5 stories/,
-  );
-  assert.equal(run.items.length, 4);
+test("accepts the four executive and one technical Daily mix", async () => {
+  const run = await seedRun("daily");
+  run.items.forEach((item, index) => { item.editorialLane = index < 4 ? "executive" : "technical"; });
+  assert.doesNotThrow(() => validatePublicationRun(run));
+});
+
+test("rejects empty and oversized issues for both cadences", async () => {
+  for (const cadence of ["daily", "weekly"]) {
+    const run = await seedRun(cadence);
+    run.items.push(structuredClone(run.items[0]));
+    assert.throws(() => validatePublicationRun(run), /between 1 and/);
+    run.items = [];
+    assert.throws(() => validatePublicationRun(run), /between 1 and/);
+  }
 });
 
 test("rejects a mismatched stable run id", async () => {
