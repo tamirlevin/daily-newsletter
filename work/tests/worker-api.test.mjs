@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { getPlatformProxy } from "wrangler";
 import worker from "../dist/server/index.js";
 
 class MockStatement {
@@ -62,7 +64,10 @@ class MockD1 {
   }
 
   async batch(statements) {
+    const results = [];
     for (const statement of statements) {
+      const result = { success: true, results: [] };
+      results.push(result);
       if (statement.query.includes("INSERT INTO brief_runs")) {
         const [
           runId,
@@ -76,6 +81,12 @@ class MockD1 {
           payload,
         ] = statement.values;
         const existing = this.rows.get(runId);
+        const delivery = [...this.deliveries.values()].find(
+          (entry) => entry.run_id === runId,
+        );
+        if (existing && cadence === "daily" && ["sending", "sent"].includes(delivery?.status)) {
+          continue;
+        }
         this.rows.set(runId, {
           run_id: runId,
           cadence,
@@ -87,6 +98,7 @@ class MockD1 {
           payload_hash: payloadHash,
           payload,
         });
+        result.results.push({ run_id: runId });
       } else if (statement.query.includes("DELETE FROM brief_runs")) {
         const [cadence, , limit] = statement.values;
         const retainedIds = new Set(
@@ -161,7 +173,7 @@ class MockD1 {
         throw new Error(`Unsupported mock batch query: ${statement.query}`);
       }
     }
-    return statements.map(() => ({ success: true }));
+    return results;
   }
 }
 
@@ -509,4 +521,110 @@ test("requires a valid email cutoff when Cloudflare sending is cutoff-gated", as
     error: "Email cutoff is not configured correctly",
   });
   assert.equal(invalid.DB.deliveries.size, 0);
+});
+
+test("Cloudflare sends once per issue against local D1", async (t) => {
+  const platform = await getPlatformProxy({
+    configPath: fileURLToPath(new URL("../wrangler.staging.jsonc", import.meta.url)),
+    persist: false,
+    remoteBindings: false,
+  });
+  t.after(() => platform.dispose());
+  const db = platform.env.DB;
+  for (const name of ["0000_panoramic_marvex.sql", "0001_bored_apocalypse.sql"]) {
+    const migration = await readFile(new URL(`../drizzle/${name}`, import.meta.url), "utf8");
+    await db.batch(migration.split("--> statement-breakpoint")
+      .map((sql) => sql.trim()).filter(Boolean).map((sql) => db.prepare(sql)));
+  }
+
+  const token = "publication-secret-that-is-long-enough";
+  const seed = await seedRun("daily");
+  const env = {
+    DB: db,
+    INGEST_TOKEN: token,
+    EMAIL_FROM: "brief@tamirlevin.dev",
+    DAILY_EMAIL_TO: "reader@example.com",
+    PUBLIC_BASE_URL: "https://brief.example",
+    EMAIL_MIN_ISSUE_DATE: seed.issueDate,
+  };
+  const ingest = (run) => worker.fetch(ingestRequest(run, token), env);
+  const deliver = (run, overrides) =>
+    worker.fetch(deliveryRequest(run.runId, token), { ...env, ...overrides });
+  const lookup = (run) => db.prepare(
+    "SELECT status, provider_message_id, attempt_count FROM email_deliveries WHERE run_id = ?",
+  ).bind(run.runId).first();
+
+  await t.test("an overlapping request cannot send or replace the claimed issue", async () => {
+    assert.equal((await ingest(seed)).status, 201);
+    const started = Promise.withResolvers();
+    const provider = Promise.withResolvers();
+    let calls = 0;
+    const EMAIL = { send: (message) => {
+      calls += 1;
+      started.resolve(message);
+      return provider.promise;
+    } };
+    const first = deliver(seed, { EMAIL });
+    try {
+      const message = await Promise.race([
+        started.promise,
+        first.then((response) => {
+          throw new Error(`Delivery returned ${response.status} before calling the provider`);
+        }),
+      ]);
+      assert.equal(message.to, "reader@example.com");
+      assert.deepEqual(message.from, { email: "brief@tamirlevin.dev", name: "AI Brief" });
+      assert.match(message.html, /https:\/\/brief\.example/);
+      assert.equal((await deliver(seed, { EMAIL })).status, 409);
+      const changed = structuredClone(seed);
+      changed.items[0].title += " updated";
+      assert.equal((await ingest(changed)).status, 409);
+    } finally {
+      provider.resolve({ messageId: "cloudflare-1" });
+      await first;
+    }
+    assert.equal((await first).status, 201);
+    assert.equal((await (await deliver(seed, { EMAIL })).json()).disposition, "already_sent");
+    assert.equal(calls, 1);
+    assert.deepEqual(await lookup(seed), {
+      status: "sent", provider_message_id: "cloudflare-1", attempt_count: 1,
+    });
+  });
+
+  await t.test("provider errors and unrecorded provider success are not retried", async () => {
+    for (const [issueDate, completionFails] of [["2026-07-26", false], ["2026-07-27", true]]) {
+      const run = datedRun(seed, issueDate);
+      assert.equal((await ingest(run)).status, 201);
+      let calls = 0;
+      const EMAIL = { send: async () => {
+        calls += 1;
+        if (!completionFails) throw new Error("ambiguous timeout");
+        return { messageId: "cloudflare-2" };
+      } };
+      const DB = completionFails ? {
+        prepare(query) {
+          if (query.includes("UPDATE email_deliveries") && query.includes("RETURNING")) {
+            throw new Error("simulated failure recording acceptance");
+          }
+          return db.prepare(query);
+        },
+      } : db;
+      assert.equal((await deliver(run, { DB, EMAIL })).status, completionFails ? 503 : 502);
+      assert.equal((await deliver(run, { EMAIL })).status, 409);
+      assert.equal(calls, 1);
+      assert.deepEqual(await lookup(run), {
+        status: "sending", provider_message_id: null, attempt_count: 1,
+      });
+    }
+  });
+
+  await t.test("reader-only imports are never eligible, even after the cutoff", async () => {
+    const run = datedRun(seed, "2026-07-28");
+    assert.equal((await ingest(run)).status, 201);
+    await db.prepare("UPDATE brief_runs SET payload_hash = 'legacy:fixture' WHERE run_id = ?")
+      .bind(run.runId).run();
+    const EMAIL = { send: () => assert.fail("Imported issues must not send") };
+    assert.equal((await deliver(run, { EMAIL })).status, 409);
+    assert.equal(await lookup(run), null);
+  });
 });
