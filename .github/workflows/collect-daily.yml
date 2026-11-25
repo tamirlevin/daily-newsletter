@@ -79,7 +79,15 @@ jobs:
         run: npm run publish:latest -- --cadence daily
 
       - name: Deliver the accepted Daily email
-        if: steps.publish.outputs.email_eligible == 'true' && ((github.event_name == 'schedule' && vars.DAILY_EMAIL_ENABLED != 'false') || (github.event_name == 'workflow_dispatch' && inputs.deliver_email == true))
+        if: >-
+          steps.publish.outputs.email_eligible == 'true' &&
+          (
+            (github.event_name == 'schedule' &&
+              (vars.DAILY_EMAIL_ENABLED != 'false' ||
+                (vars.DAILY_EMAIL_FIRST_ISSUE_DATE != '' &&
+                 steps.publish.outputs.run_id == format('daily:{0}', vars.DAILY_EMAIL_FIRST_ISSUE_DATE)))) ||
+            (github.event_name == 'workflow_dispatch' && inputs.deliver_email == true)
+          )
         env:
           SITES_INGEST_URL: ${{ secrets.SITES_INGEST_URL }}
           SITES_INGEST_TOKEN: ${{ secrets.SITES_INGEST_TOKEN }}

@@ -20,11 +20,22 @@ interface D1Database {
   batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
 }
 
+interface EmailBinding {
+  send(message: {
+    to: string;
+    from: { email: string; name: string };
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<{ messageId: string }>;
+}
+
 interface Env {
   DB: D1Database;
   ASSETS?: { fetch(request: Request): Promise<Response> };
   INGEST_TOKEN?: string;
   RESEND_API_KEY?: string;
+  EMAIL?: EmailBinding;
   EMAIL_FROM?: string;
   DAILY_EMAIL_TO?: string;
   PUBLIC_BASE_URL?: string;
@@ -306,7 +317,7 @@ async function ingestRun(request: Request, env: Env) {
     publication.payload.publication.publishedAt = publishedAt;
     const payload = JSON.stringify(publication.payload);
 
-    await env.DB.batch([
+    const [write] = await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO brief_runs (
           run_id,
@@ -326,7 +337,12 @@ async function ingestRun(request: Request, env: Env) {
           updated_at = excluded.updated_at,
           source_health = excluded.source_health,
           payload_hash = excluded.payload_hash,
-          payload = excluded.payload`,
+           payload = excluded.payload
+         WHERE excluded.cadence != 'daily' OR NOT EXISTS (
+           SELECT 1 FROM email_deliveries
+           WHERE run_id = excluded.run_id AND status IN ('sending', 'sent')
+         )
+         RETURNING run_id`,
       ).bind(
         publication.runId,
         publication.cadence,
@@ -354,6 +370,13 @@ async function ingestRun(request: Request, env: Env) {
         publication.retainedRuns,
       ),
     ]);
+
+    if (write.results?.length !== 1) {
+      return json(
+        { error: "This Daily issue is already being delivered or has been sent" },
+        { status: 409, headers: { "cache-control": "no-store" } },
+      );
+    }
 
     return json(
       {
@@ -385,11 +408,16 @@ function emailConfiguration(env: Env) {
   const from = env.EMAIL_FROM?.trim();
   const to = env.DAILY_EMAIL_TO?.trim();
   const rawBaseUrl = env.PUBLIC_BASE_URL?.trim();
-  if (!apiKey || !from || !to || !rawBaseUrl) return null;
+  if (!from || !to || !rawBaseUrl) return null;
   try {
     const baseUrl = new URL(rawBaseUrl);
     if (baseUrl.protocol !== "https:") return null;
-    return { apiKey, from, to, baseUrl };
+    if (env.EMAIL) {
+      const mailbox = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
+      if (!mailbox.test(from) || !mailbox.test(to)) return null;
+      return { provider: "cloudflare" as const, binding: env.EMAIL, from, to, baseUrl };
+    }
+    return apiKey ? { provider: "resend" as const, apiKey, from, to, baseUrl } : null;
   } catch {
     return null;
   }
@@ -424,6 +452,84 @@ async function markDeliveryFailure(
        WHERE delivery_key = ? AND status != 'sent'`,
     ).bind(definitive ? "failed" : "sending", error.slice(0, 500), now, deliveryKey),
   ]);
+}
+
+async function deliverWithCloudflare(
+  env: Env,
+  row: StoredRun,
+  deliveryKey: string,
+  binding: EmailBinding,
+  message: Parameters<EmailBinding["send"]>[0],
+) {
+  const headers = { "cache-control": "no-store" };
+  const claimedAt = new Date().toISOString();
+  // A single insert wins. Never reclaim a row automatically: the provider may
+  // have accepted the message even if this Worker never recorded the result.
+  const claim = await env.DB.prepare(
+    `INSERT INTO email_deliveries (
+       delivery_key, run_id, payload_hash, status, provider,
+       attempt_count, last_attempt_at, created_at, updated_at
+     )
+     SELECT ?, run_id, payload_hash, 'sending', 'cloudflare', 1, ?, ?, ?
+     FROM brief_runs WHERE run_id = ? AND cadence = 'daily' AND payload_hash = ?
+     ON CONFLICT DO NOTHING
+     RETURNING delivery_key`,
+  ).bind(deliveryKey, claimedAt, claimedAt, claimedAt, row.run_id, row.payload_hash)
+    .first<{ delivery_key: string }>();
+  if (!claim) {
+    const existing = await storedDelivery(env, row.run_id);
+    if (existing?.status === "sent") {
+      return json(
+        { delivered: true, disposition: "already_sent", runId: row.run_id, sentAt: existing.sent_at },
+        { headers },
+      );
+    }
+    return json(
+      { error: existing
+        ? "Delivery is in progress or needs reconciliation; it will not be retried automatically"
+        : "The accepted issue changed before delivery could be claimed" },
+      { status: 409, headers },
+    );
+  }
+
+  let messageId: string;
+  try {
+    ({ messageId } = await binding.send(message));
+    if (!messageId) throw new Error("Missing Cloudflare message ID");
+  } catch {
+    return json(
+      { error: "Cloudflare did not confirm delivery; reconcile before attempting another send" },
+      { status: 502, headers },
+    );
+  }
+
+  const sentAt = new Date().toISOString();
+  try {
+    const completion = await env.DB.prepare(
+      `UPDATE email_deliveries
+       SET status = 'sent', provider_message_id = ?, sent_at = ?, updated_at = ?
+       WHERE delivery_key = ? AND status = 'sending' AND provider = 'cloudflare'
+         AND payload_hash = ? AND created_at = ?
+       RETURNING delivery_key`,
+    ).bind(messageId, sentAt, sentAt, deliveryKey, row.payload_hash, claimedAt)
+      .first<{ delivery_key: string }>();
+    if (completion) {
+      return json(
+        { delivered: true, disposition: "sent", runId: row.run_id, sentAt },
+        { status: 201, headers },
+      );
+    }
+  } catch {
+    // Keep the durable claim even if the completion statement fails.
+  }
+  console.error("Cloudflare accepted email but ledger completion was not confirmed", {
+    runId: row.run_id,
+    messageId,
+  });
+  return json(
+    { error: "Cloudflare accepted the message but the ledger could not be confirmed; do not resend" },
+    { status: 503, headers },
+  );
 }
 
 async function deliverDailyEmail(request: Request, env: Env) {
@@ -461,7 +567,8 @@ async function deliverDailyEmail(request: Request, env: Env) {
     }
 
     const minIssueDate = env.EMAIL_MIN_ISSUE_DATE?.trim();
-    const cutoffRequired = env.EMAIL_CUTOFF_REQUIRED === "true";
+    const cutoffRequired =
+      configuration.provider === "cloudflare" || env.EMAIL_CUTOFF_REQUIRED === "true";
     if (cutoffRequired && !minIssueDate) {
       return json(
         { error: "Email cutoff is required" },
@@ -490,6 +597,20 @@ async function deliverDailyEmail(request: Request, env: Env) {
     }
 
     const deliveryKey = `${runId}:primary:v1`;
+    if (configuration.provider === "cloudflare") {
+      if (row.payload_hash.startsWith("legacy:")) {
+        return json(
+          { error: "Imported reader history is not eligible for email" },
+          { status: 409, headers: { "cache-control": "no-store" } },
+        );
+      }
+      const message = renderDailyEmail(run, configuration.baseUrl.toString());
+      return await deliverWithCloudflare(env, row, deliveryKey, configuration.binding, {
+        ...message,
+        from: { email: configuration.from, name: "AI Brief" },
+        to: configuration.to,
+      });
+    }
     const existing = await storedDelivery(env, runId);
     if (existing?.status === "sent") {
       return json(
@@ -506,6 +627,12 @@ async function deliverDailyEmail(request: Request, env: Env) {
       return json(
         { error: "Delivery payload does not match the accepted run" },
         { status: 409 },
+      );
+    }
+    if (existing?.provider === "cloudflare") {
+      return json(
+        { error: "Cloudflare delivery must be reconciled before any resend" },
+        { status: 409, headers: { "cache-control": "no-store" } },
       );
     }
     if (

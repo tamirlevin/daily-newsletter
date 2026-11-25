@@ -29,20 +29,24 @@ Before deploying, replace `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID` with the real
 
 Use `wrangler.cloudflare.predeploy.jsonc` for the initial route-free deployment. It has the same Worker/D1/assets settings but no custom-domain route. After the final restore is verified, deploy with `wrangler.cloudflare.jsonc` to attach `brief.tamirlevin.dev`.
 
-## Required secrets
+## Publishing and single-recipient email
 
-Set these through Wrangler or Cloudflare dashboard, not in source control:
+Set `INGEST_TOKEN` through Wrangler or the Cloudflare dashboard, not in source
+control. It must match GitHub's `SITES_INGEST_TOKEN`. Leave staging email
+unconfigured.
 
-```bash
-wrangler secret put INGEST_TOKEN --config wrangler.cloudflare.jsonc
-wrangler secret put RESEND_API_KEY --config wrangler.cloudflare.jsonc
-wrangler secret put EMAIL_FROM --config wrangler.cloudflare.jsonc
-wrangler secret put DAILY_EMAIL_TO --config wrangler.cloudflare.jsonc
-```
-
-`INGEST_TOKEN` must match GitHub's `SITES_INGEST_TOKEN`.
-
-For staging, leave email secrets unset so `emailConfigured` is false. Use a separate staging Worker/D1/token for test publications so fixtures cannot contaminate the production restore.
+For production email, onboard the sender domain in Cloudflare Email Sending and
+verify the recipient in Email Routing's **Destination Addresses**. Configure a
+`send_email` binding named `EMAIL` restricted to that single destination via
+`destination_address`. Keep that production config in the ignored
+`work/.wrangler.cloudflare.email.json`, based on `wrangler.cloudflare.jsonc`.
+Once the binding is configured, deploy from `work/` with
+`npm run build:cloudflare` followed by
+`npx wrangler deploy --config .wrangler.cloudflare.email.json`; the standard
+email-disabled config would remove the binding. Set `EMAIL_FROM` to a bare
+mailbox on the onboarded domain and `DAILY_EMAIL_TO` as a Worker secret.
+No Resend key is needed for the native binding. The original Sites
+configuration can still use Resend.
 
 ## Historical email cutoff
 
@@ -53,9 +57,24 @@ EMAIL_CUTOFF_REQUIRED=true
 EMAIL_MIN_ISSUE_DATE=<first Melbourne issue date eligible for automatic email>
 ```
 
-This must be strictly after the last issue Sites could have sent. The Cloudflare config sets `EMAIL_CUTOFF_REQUIRED=true`, so sending fails closed until a valid calendar cutoff is configured. The Worker enforces it in the delivery endpoint, not only in the workflow. Do not mark unknown deliveries as sent. Reconcile ambiguous attempts with Resend before retrying; changing `PUBLIC_BASE_URL` changes the rendered message under the same idempotency key.
+Set a real cutoff in the production deployment config for the first new
+Melbourne issue approved for email, after the last issue Sites could have sent.
+Native delivery requires a valid cutoff and rejects reader-only imports even
+if the cutoff would allow them.
 
-Before enabling email, also harden the delivery claim/retry race: make `sent` terminal under concurrency, use an atomic conditional claim, and bound retries from a fixed first-attempt deadline. The current changes make `sent` harder to overwrite and anchor the retry window to `created_at`, but concurrent/ambiguous delivery still needs explicit verification.
+Cloudflare delivery atomically claims the accepted payload before calling the
+provider. A second request never sends again. If the provider response or the
+ledger write is uncertain, leave the claim in place and reconcile against
+Cloudflare's delivery logs. Do not automatically clear or replay it. If
+Cloudflare returned a message ID but recording it failed, the Worker logs the
+run ID and message ID for reconciliation.
+
+Keep `DAILY_EMAIL_ENABLED=false` while configuring the binding. To try just
+one scheduled issue, set `DAILY_EMAIL_FIRST_ISSUE_DATE` to its Melbourne date.
+The workflow checks the accepted run ID, so the exception expires with that
+issue. Verify inbox receipt and the `sent` ledger row before enabling recurring
+email, then remove the one-issue variable. Do not replay historical or
+ambiguous deliveries.
 
 ## Data migration
 
@@ -156,7 +175,7 @@ Smoke-test root HTML and target-specific metadata, real JS/CSS, asset 404s, JSON
 10. Update GitHub `SITES_INGEST_URL` to `https://brief.tamirlevin.dev/api/ingest` and update the token only if it changed.
 11. Run one controlled fresh issue. Verify it persists and is readable after ingest, and verify recent-URL exclusion uses the migrated history.
 12. Resume schedules with email disabled. Keep only one active publisher.
-13. Enable live email only after the atomic delivery claim, ownership-checked completion, ambiguous-send recovery, and production `EMAIL_MIN_ISSUE_DATE` are verified. Then set `DAILY_EMAIL_ENABLED=true`.
+13. Enable live email separately using the single-recipient setup and verification above.
 
 ## Rollback
 

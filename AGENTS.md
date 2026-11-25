@@ -67,7 +67,10 @@ and **How it works** views.
     It may be requested only after the exact Daily run has been accepted and
     stored by Sites. Weekly cannot use the email endpoint. The current
     single-recipient setup uses Resend's `onboarding@resend.dev` sender because
-    the recipient is the email address attached to the Resend account.
+    the recipient is the email address attached to the Resend account. The
+    Cloudflare Worker can instead use its native `EMAIL` binding restricted to
+    one verified inbox; see `work/CLOUDFLARE.md`. Keep live sending gated until
+    the sender, recipient, and first eligible Melbourne issue date are verified.
 12. Run identity is `{cadence}:{Melbourne issue date}`. Re-running the same
     issue must not create another history record or another email.
 13. Daily uses a three-day discovery window so a varied five-story issue remains
@@ -227,6 +230,7 @@ Repository Actions secrets:
 Repository Actions variable:
 
 - `DAILY_EMAIL_ENABLED` — set to `false` to publish scheduled Daily runs without requesting email. Manual Daily dispatches also require the `deliver_email` input to be true; it defaults to false. Use this gate during hosting cutover or email reconciliation.
+- `DAILY_EMAIL_FIRST_ISSUE_DATE` — optional Melbourne issue date (`YYYY-MM-DD`) to allow a single scheduled issue to send while recurring email is off. Remove this exception once delivery is verified.
 
 Collector, ranking, or workflow changes become active after they reach `main`.
 A useful end-to-end verification is a manual dispatch of

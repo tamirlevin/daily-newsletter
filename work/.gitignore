@@ -18,6 +18,7 @@
 /dist-ssr/
 /.vinext/
 /.wrangler/
+/.wrangler.cloudflare.email.json
 
 # misc
 .DS_Store
