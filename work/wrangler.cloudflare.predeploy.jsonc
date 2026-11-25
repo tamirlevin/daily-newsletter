@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-weekly-brief",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-07-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ai-weekly-brief",
+      "database_id": "74077418-dd3a-432c-817c-95d406fa2b19",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "vars": {
+    "PUBLIC_BASE_URL": "https://brief.tamirlevin.dev",
+    "EMAIL_CUTOFF_REQUIRED": "true"
+  }
+}

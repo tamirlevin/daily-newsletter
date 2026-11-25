@@ -93,7 +93,9 @@ without blocking an otherwise publishable issue.
 Only after Sites accepts and stores a Daily run does the workflow request email
 delivery. Sites keeps the permanent delivery ledger and Resend receives the
 same deterministic idempotency key on every retry. Weekly runs cannot use the
-email endpoint.
+email endpoint. During hosting cutover or email reconciliation, set the GitHub
+repository variable `DAILY_EMAIL_ENABLED=false` to skip scheduled Daily email;
+manual dispatches require the `deliver_email` input, which defaults to false.
 
 Hosted values are managed outside version control:
 

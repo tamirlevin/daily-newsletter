@@ -39,3 +39,5 @@ yarn-error.log*
 /data/drafts/**/*.json
 /data/recent/**/*.json
 /data/source-health/**/*.json
+/data/import/
+/data/export/

@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-weekly-brief-staging",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-07-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ai-weekly-brief-staging",
+      "database_id": "64ab073a-55a1-4cf9-aee4-b0d78c559c29",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "vars": {
+    "EMAIL_CUTOFF_REQUIRED": "true"
+  }
+}
