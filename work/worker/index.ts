@@ -22,11 +22,14 @@ interface D1Database {
 
 interface Env {
   DB: D1Database;
+  ASSETS?: { fetch(request: Request): Promise<Response> };
   INGEST_TOKEN?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
   DAILY_EMAIL_TO?: string;
   PUBLIC_BASE_URL?: string;
+  EMAIL_MIN_ISSUE_DATE?: string;
+  EMAIL_CUTOFF_REQUIRED?: string;
 }
 
 type StoredRun = {
@@ -392,9 +395,18 @@ function emailConfiguration(env: Env) {
   }
 }
 
+function isValidIssueDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(date.valueOf()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
+
 function sendingWindowIsOpen(delivery: StoredDelivery) {
-  if (!delivery.last_attempt_at) return false;
-  const elapsed = Date.now() - new Date(delivery.last_attempt_at).valueOf();
+  if (!delivery.created_at) return false;
+  const elapsed = Date.now() - new Date(delivery.created_at).valueOf();
   return Number.isFinite(elapsed) && elapsed < 24 * 60 * 60 * 1000;
 }
 
@@ -409,7 +421,7 @@ async function markDeliveryFailure(
     env.DB.prepare(
       `UPDATE email_deliveries
        SET status = ?, last_error = ?, updated_at = ?
-       WHERE delivery_key = ?`,
+       WHERE delivery_key = ? AND status != 'sent'`,
     ).bind(definitive ? "failed" : "sending", error.slice(0, 500), now, deliveryKey),
   ]);
 }
@@ -446,6 +458,35 @@ async function deliverDailyEmail(request: Request, env: Env) {
         { error: "Email delivery is available only for Daily runs" },
         { status: 409 },
       );
+    }
+
+    const minIssueDate = env.EMAIL_MIN_ISSUE_DATE?.trim();
+    const cutoffRequired = env.EMAIL_CUTOFF_REQUIRED === "true";
+    if (cutoffRequired && !minIssueDate) {
+      return json(
+        { error: "Email cutoff is required" },
+        { status: 503, headers: { "cache-control": "no-store" } },
+      );
+    }
+    if (minIssueDate) {
+      if (!isValidIssueDate(minIssueDate)) {
+        return json(
+          { error: "Email cutoff is not configured correctly" },
+          { status: 503, headers: { "cache-control": "no-store" } },
+        );
+      }
+      if (!isValidIssueDate(row.issue_date)) {
+        return json(
+          { error: "Stored issue date is invalid" },
+          { status: 503, headers: { "cache-control": "no-store" } },
+        );
+      }
+      if (row.issue_date < minIssueDate) {
+        return json(
+          { error: "Historical email delivery is disabled" },
+          { status: 409, headers: { "cache-control": "no-store" } },
+        );
+      }
     }
 
     const deliveryKey = `${runId}:primary:v1`;
@@ -499,7 +540,8 @@ async function deliverDailyEmail(request: Request, env: Env) {
           attempt_count = email_deliveries.attempt_count + 1,
           last_attempt_at = excluded.last_attempt_at,
           last_error = NULL,
-          updated_at = excluded.updated_at`,
+          updated_at = excluded.updated_at
+        WHERE email_deliveries.status != 'sent'`,
       ).bind(deliveryKey, runId, row.payload_hash, now, now, now),
     ]);
 
@@ -667,6 +709,14 @@ export default {
         cadences: ["daily", "weekly"],
         emailConfigured: Boolean(emailConfiguration(env)),
       });
+    }
+
+    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+      return json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(request);
     }
 
     return json({ error: "Not found" }, { status: 404 });

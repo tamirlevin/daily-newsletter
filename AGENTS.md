@@ -224,6 +224,10 @@ Repository Actions secrets:
 - `SITES_INGEST_URL` — the live URL ending in `/api/ingest`.
 - `SITES_INGEST_TOKEN` — the shared publication token.
 
+Repository Actions variable:
+
+- `DAILY_EMAIL_ENABLED` — set to `false` to publish scheduled Daily runs without requesting email. Manual Daily dispatches also require the `deliver_email` input to be true; it defaults to false. Use this gate during hosting cutover or email reconciliation.
+
 Collector, ranking, or workflow changes become active after they reach `main`.
 A useful end-to-end verification is a manual dispatch of
 the relevant Daily or Weekly workflow, followed by checking that publication

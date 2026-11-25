@@ -391,3 +391,122 @@ test("never emails a Weekly run", async () => {
   );
   assert.equal(response.status, 409);
 });
+
+test("serves static assets through ASSETS while keeping unknown API routes JSON", async () => {
+  const env = {
+    DB: new MockD1(),
+    ASSETS: {
+      fetch: async (request) =>
+        new Response(`asset:${new URL(request.url).pathname}`, {
+          status: 200,
+          headers: { "content-type": "text/plain" },
+        }),
+    },
+  };
+
+  const page = await worker.fetch(
+    new Request("https://brief.example/history"),
+    env,
+  );
+  assert.equal(page.status, 200);
+  assert.equal(await page.text(), "asset:/history");
+
+  const missingApi = await worker.fetch(
+    new Request("https://brief.example/api/missing"),
+    env,
+  );
+  assert.equal(missingApi.status, 404);
+  assert.equal(
+    missingApi.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assert.deepEqual(await missingApi.json(), { error: "Not found" });
+
+  const bareApi = await worker.fetch(
+    new Request("https://brief.example/api"),
+    env,
+  );
+  assert.equal(bareApi.status, 404);
+  assert.deepEqual(await bareApi.json(), { error: "Not found" });
+});
+
+test("blocks historical email before the configured cutover issue date", async (t) => {
+  const token = "publication-secret-that-is-long-enough";
+  const env = {
+    DB: new MockD1(),
+    INGEST_TOKEN: token,
+    RESEND_API_KEY: "re_test",
+    EMAIL_FROM: "AI Brief <brief@example.com>",
+    DAILY_EMAIL_TO: "reader@example.com",
+    PUBLIC_BASE_URL: "https://brief.example",
+    EMAIL_MIN_ISSUE_DATE: "2026-07-26",
+  };
+  const run = await seedRun("daily");
+  await worker.fetch(ingestRequest(run, token), env);
+
+  let providerCalls = 0;
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+  globalThis.fetch = async () => {
+    providerCalls += 1;
+    throw new Error("Historical delivery should not reach the provider");
+  };
+
+  const response = await worker.fetch(deliveryRequest(run.runId, token), env);
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    error: "Historical email delivery is disabled",
+  });
+  assert.equal(providerCalls, 0);
+  assert.equal(env.DB.deliveries.size, 0);
+});
+
+test("requires a valid email cutoff when Cloudflare sending is cutoff-gated", async (t) => {
+  const token = "publication-secret-that-is-long-enough";
+  const run = await seedRun("daily");
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+  globalThis.fetch = async () => {
+    throw new Error("Cutoff-gated delivery should not reach the provider");
+  };
+
+  const missing = {
+    DB: new MockD1(),
+    INGEST_TOKEN: token,
+    RESEND_API_KEY: "re_test",
+    EMAIL_FROM: "AI Brief <brief@example.com>",
+    DAILY_EMAIL_TO: "reader@example.com",
+    PUBLIC_BASE_URL: "https://brief.example",
+    EMAIL_CUTOFF_REQUIRED: "true",
+  };
+  await worker.fetch(ingestRequest(run, token), missing);
+  const missingResponse = await worker.fetch(
+    deliveryRequest(run.runId, token),
+    missing,
+  );
+  assert.equal(missingResponse.status, 503);
+  assert.deepEqual(await missingResponse.json(), {
+    error: "Email cutoff is required",
+  });
+  assert.equal(missing.DB.deliveries.size, 0);
+
+  const invalid = {
+    ...missing,
+    DB: new MockD1(),
+    EMAIL_MIN_ISSUE_DATE: "2026-02-30",
+  };
+  await worker.fetch(ingestRequest(run, token), invalid);
+  const invalidResponse = await worker.fetch(
+    deliveryRequest(run.runId, token),
+    invalid,
+  );
+  assert.equal(invalidResponse.status, 503);
+  assert.deepEqual(await invalidResponse.json(), {
+    error: "Email cutoff is not configured correctly",
+  });
+  assert.equal(invalid.DB.deliveries.size, 0);
+});

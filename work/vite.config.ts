@@ -7,6 +7,7 @@ import { sites } from "./build/sites-vite-plugin";
 const LOCAL_DATABASE_ID = "00000000-0000-4000-8000-000000000000";
 
 export default defineConfig(async ({ isSsrBuild }) => {
+  const isCloudflareBuild = process.env.BUILD_TARGET === "cloudflare";
   const shared = {
     resolve: {
       alias: {
@@ -42,7 +43,20 @@ export default defineConfig(async ({ isSsrBuild }) => {
     base: "/",
     plugins: [
       react(),
-      sites(),
+      ...(isCloudflareBuild
+        ? [
+            {
+              name: "cloudflare-public-origin",
+              apply: "build" as const,
+              transformIndexHtml(html: string) {
+                return html.replaceAll(
+                  "https://ai-weekly-brief.tamir-levin.chatgpt.site",
+                  "https://brief.tamirlevin.dev",
+                );
+              },
+            },
+          ]
+        : [sites()]),
       cloudflare({
         config: {
           name: "ai-weekly-brief",
